@@ -4,7 +4,7 @@
 import { useState, useMemo } from "react";
 import DashboardLayout from "../dashboard/layout";
 import { useFirestore, useCollection, useUser } from "@/firebase";
-import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
 import { 
   Card, 
   CardHeader, 
@@ -44,13 +44,13 @@ import {
   Settings2, 
   Trash2, 
   AlertTriangle,
-  ClipboardCheck,
   Zap,
-  Wrench
+  Wrench,
+  Save,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function MaterialsPage() {
   const { profile } = useUser();
@@ -60,7 +60,9 @@ export default function MaterialsPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
 
   // Inventario states
   const [newMaterial, setNewMaterial] = useState({
@@ -109,6 +111,34 @@ export default function MaterialsPage() {
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar." });
     }
+  };
+
+  const handleEditTemplate = (type: string) => {
+    const defaultMaterials = type === 'Instalación' 
+      ? [
+          { name: "Paneles Fotovoltaicos", qty: 24 },
+          { name: "Inversor Híbrido", qty: 1 },
+          { name: "Estructura de Aluminio", qty: 4 },
+          { name: "Cable Solar 6mm", qty: 100 },
+        ]
+      : [
+          { name: "Líquido Limpiador Dieléctrico", qty: 2 },
+          { name: "Terminales MC4", qty: 10 },
+          { name: "Fusibles de Protección", qty: 5 },
+        ];
+    
+    setEditingTemplate({ type, items: defaultMaterials });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveTemplate = () => {
+    setLoading(true);
+    // Simulación de guardado de configuración CHS/CSD
+    setTimeout(() => {
+      toast({ title: "Plantilla Actualizada", description: `La configuración para ${editingTemplate.type} ha sido guardada.` });
+      setIsEditDialogOpen(false);
+      setLoading(false);
+    }, 1000);
   };
 
   if (!isAdmin) {
@@ -205,7 +235,7 @@ export default function MaterialsPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
                       placeholder="Buscar material..." 
-                      className="pl-10 bg-white/5 border-white/5 text-xs h-9"
+                      className="pl-10 bg-white/5 border-white/10 text-xs h-9"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -312,7 +342,11 @@ export default function MaterialsPage() {
                       </div>
                     ))}
                   </div>
-                  <Button variant="outline" className="w-full border-white/10 text-xs font-bold hover:bg-accent/10">
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-white/10 text-xs font-bold hover:bg-accent/10"
+                    onClick={() => handleEditTemplate('Instalación')}
+                  >
                     EDITAR CONFIGURACIÓN (CHS)
                   </Button>
                 </CardContent>
@@ -343,7 +377,11 @@ export default function MaterialsPage() {
                       </div>
                     ))}
                   </div>
-                  <Button variant="outline" className="w-full border-white/10 text-xs font-bold hover:bg-primary/10">
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-white/10 text-xs font-bold hover:bg-primary/10"
+                    onClick={() => handleEditTemplate('Mantenimiento')}
+                  >
                     EDITAR CONFIGURACIÓN (CHS)
                   </Button>
                 </CardContent>
@@ -351,6 +389,90 @@ export default function MaterialsPage() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Modal de Edición de Plantilla (CHS/CSD) */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="bg-card border-white/10 text-white sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-accent flex items-center gap-2">
+                <Settings2 className="h-5 w-5" /> Configurar Checklist: {editingTemplate?.type}
+              </DialogTitle>
+              <CardDescription>
+                Añada o elimine materiales obligatorios para este tipo de servicio.
+              </CardDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4 max-h-[400px] overflow-y-auto pr-2">
+              {editingTemplate?.items.map((item: any, index: number) => (
+                <div key={index} className="flex items-center gap-3 bg-white/5 p-3 rounded-lg border border-white/5">
+                  <div className="flex-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">Material</Label>
+                    <Input 
+                      value={item.name} 
+                      className="bg-transparent border-none p-0 h-6 focus-visible:ring-0 text-sm font-bold"
+                      onChange={(e) => {
+                        const newItems = [...editingTemplate.items];
+                        newItems[index].name = e.target.value;
+                        setEditingTemplate({...editingTemplate, items: newItems});
+                      }}
+                    />
+                  </div>
+                  <div className="w-24">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">Cant. Requerida</Label>
+                    <Input 
+                      type="number" 
+                      value={item.qty} 
+                      className="bg-transparent border-none p-0 h-6 focus-visible:ring-0 text-sm font-bold text-accent"
+                      onChange={(e) => {
+                        const newItems = [...editingTemplate.items];
+                        newItems[index].qty = parseInt(e.target.value) || 0;
+                        setEditingTemplate({...editingTemplate, items: newItems});
+                      }}
+                    />
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="mt-4 text-muted-foreground hover:text-red-500"
+                    onClick={() => {
+                      const newItems = editingTemplate.items.filter((_: any, i: number) => i !== index);
+                      setEditingTemplate({...editingTemplate, items: newItems});
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button 
+                variant="outline" 
+                className="w-full border-dashed border-white/10 text-xs gap-2"
+                onClick={() => {
+                  setEditingTemplate({
+                    ...editingTemplate,
+                    items: [...editingTemplate.items, { name: "Nuevo Insumo", qty: 1 }]
+                  });
+                }}
+              >
+                <Plus className="h-3 w-3" /> Añadir Material a Plantilla
+              </Button>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button 
+                variant="ghost" 
+                className="flex-1 text-white border border-white/10"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                className="flex-1 bg-accent hover:bg-accent/90 text-white font-bold gap-2"
+                onClick={handleSaveTemplate}
+                disabled={loading}
+              >
+                {loading ? "Guardando..." : <><Save className="h-4 w-4" /> Guardar Cambios (CHS)</>}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
