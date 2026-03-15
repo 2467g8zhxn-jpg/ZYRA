@@ -1,10 +1,18 @@
-
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import DashboardLayout from "../dashboard/layout";
 import { useFirestore, useCollection, useUser } from "@/firebase";
-import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  addDoc, 
+  deleteDoc, 
+  serverTimestamp 
+} from "firebase/firestore";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 import { 
   Card, 
   CardHeader, 
@@ -62,7 +70,7 @@ export default function MaterialsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [editingTemplate, setEditingTemplate] = useState<{ type: string; items: any[] } | null>(null);
 
   // Inventario states
   const [newMaterial, setNewMaterial] = useState({
@@ -73,16 +81,20 @@ export default function MaterialsPage() {
   // Queries
   const materialsQuery = useMemo(() => {
     if (!db) return null;
-    return collection(db, "materiales");
+    const ref = collection(db, "materiales");
+    (ref as any).__memo = true;
+    return ref;
   }, [db]);
 
   const templatesQuery = useMemo(() => {
     if (!db) return null;
-    return collection(db, "checklist_servicio");
+    const ref = collection(db, "checklist_servicio");
+    (ref as any).__memo = true;
+    return ref;
   }, [db]);
 
-  const { data: materials, loading: materialsLoading } = useCollection(materialsQuery);
-  const { data: templates, loading: templatesLoading } = useCollection(templatesQuery);
+  const { data: materials, isLoading: materialsLoading } = useCollection(materialsQuery);
+  const { data: templates } = useCollection(templatesQuery);
 
   const filteredMaterials = useMemo(() => {
     if (!materials) return [];
@@ -91,7 +103,6 @@ export default function MaterialsPage() {
     );
   }, [materials, searchTerm]);
 
-  // Map templates for easy access
   const serviceTemplates = useMemo(() => {
     const map: Record<string, any> = {
       'Instalación': {
@@ -121,32 +132,46 @@ export default function MaterialsPage() {
     return map;
   }, [templates]);
 
-  const handleCreateMaterial = async () => {
+  const handleCreateMaterial = () => {
     if (!db) return;
     setLoading(true);
-    try {
-      await addDoc(collection(db, "materiales"), {
-        ...newMaterial,
-        createdAt: serverTimestamp(),
-      });
-      toast({ title: "Material registrado", description: "Se añadió al catálogo de inventario." });
-      setIsCreateDialogOpen(false);
-      setNewMaterial({ Mat_Nombre: "", Mat_Stock_Disponible: 0 });
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo registrar el material." });
-    } finally {
-      setLoading(false);
-    }
+    const colRef = collection(db, "materiales");
+    const data = {
+      ...newMaterial,
+      createdAt: serverTimestamp(),
+    };
+
+    addDoc(colRef, data)
+      .then(() => {
+        toast({ title: "Material registrado", description: "Se añadió al catálogo de inventario." });
+        setIsCreateDialogOpen(false);
+        setNewMaterial({ Mat_Nombre: "", Mat_Stock_Disponible: 0 });
+      })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: colRef.path,
+          operation: 'create',
+          requestResourceData: data,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => setLoading(false));
   };
 
-  const handleDeleteMaterial = async (id: string) => {
+  const handleDeleteMaterial = (id: string) => {
     if (!db) return;
-    try {
-      await deleteDoc(doc(db, "materiales", id));
-      toast({ title: "Eliminado", description: "Material removido del catálogo." });
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo eliminar." });
-    }
+    const docRef = doc(db, "materiales", id);
+    deleteDoc(docRef)
+      .then(() => {
+        toast({ title: "Eliminado", description: "Material removido del catálogo." });
+      })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   const handleEditTemplate = (type: string) => {
@@ -157,33 +182,33 @@ export default function MaterialsPage() {
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveTemplate = async () => {
-    if (!db || !editingTemplate) {
-      console.error("Firestore no inicializado o plantilla no seleccionada");
-      return;
-    }
+  const handleSaveTemplate = () => {
+    if (!db || !editingTemplate) return;
+    
     setLoading(true);
-    try {
-      const templateRef = doc(db, "checklist_servicio", editingTemplate.type);
-      await setDoc(templateRef, {
-        items: editingTemplate.items,
-        updatedAt: serverTimestamp(),
-      });
-      toast({ 
-        title: "Plantilla Actualizada", 
-        description: `La configuración para ${editingTemplate.type} ha sido guardada en la base de datos.` 
-      });
-      setIsEditDialogOpen(false);
-    } catch (e: any) {
-      console.error("Error al guardar plantilla:", e);
-      toast({ 
-        variant: "destructive", 
-        title: "Error al guardar", 
-        description: "No se pudo actualizar la plantilla en Firestore." 
-      });
-    } finally {
-      setLoading(false);
-    }
+    const templateRef = doc(db, "checklist_servicio", editingTemplate.type);
+    const data = {
+      items: editingTemplate.items,
+      updatedAt: serverTimestamp(),
+    };
+
+    setDoc(templateRef, data)
+      .then(() => {
+        toast({ 
+          title: "Plantilla Actualizada", 
+          description: `La configuración para ${editingTemplate.type} ha sido guardada.` 
+        });
+        setIsEditDialogOpen(false);
+      })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: templateRef.path,
+          operation: 'write',
+          requestResourceData: data,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => setLoading(false));
   };
 
   if (!isAdmin) {
@@ -482,10 +507,12 @@ export default function MaterialsPage() {
                 variant="outline" 
                 className="w-full border-dashed border-white/10 text-xs gap-2"
                 onClick={() => {
-                  setEditingTemplate({
-                    ...editingTemplate,
-                    items: [...editingTemplate.items, { name: "Nuevo Insumo", qty: 1 }]
-                  });
+                  if (editingTemplate) {
+                    setEditingTemplate({
+                      ...editingTemplate,
+                      items: [...editingTemplate.items, { name: "Nuevo Insumo", qty: 1 }]
+                    });
+                  }
                 }}
               >
                 <Plus className="h-3 w-3" /> Añadir Material a Plantilla
