@@ -339,7 +339,6 @@ export default function EmployeesPage() {
                   <TableRow className="border-border hover:bg-transparent">
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.employees.full_name}</TableHead>
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.employees.access_email}</TableHead>
-                    <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.employees.role}</TableHead>
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.employees.level_points}</TableHead>
                     <TableHead className="text-right text-muted-foreground uppercase text-[10px] font-bold">{t.common.actions}</TableHead>
                   </TableRow>
@@ -360,11 +359,6 @@ export default function EmployeesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 text-xs text-foreground"><Mail className="h-3 w-3 text-accent" /> {emp.emailAcceso || emp.email || "N/A"}</div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={emp.rol === 'admin' ? "border-yellow-500/50 text-yellow-600" : "border-primary/50 text-primary"}>
-                          {emp.rol === 'admin' ? t.common.admin : t.common.employee}
-                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-4">
