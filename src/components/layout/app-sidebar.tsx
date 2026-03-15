@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -57,7 +58,7 @@ export function AppSidebar() {
               ZYRA
             </span>
             <span className="text-[10px] font-black text-accent tracking-[0.2em] leading-none mt-1">
-              {isAdmin ? "COMMAND" : "OPERATIVO"}
+              {isAdmin ? "ADMIN" : "OPERATIVO"}
             </span>
           </div>
         </div>
