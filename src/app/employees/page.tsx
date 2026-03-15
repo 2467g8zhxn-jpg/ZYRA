@@ -185,20 +185,24 @@ export default function EmployeesPage() {
     
     // Generamos una contraseña aleatoria profesional para el mensaje
     const newTempPassword = Math.random().toString(36).slice(-8).toUpperCase() + "@Z" + Math.floor(Math.random() * 99);
+    const nombreUsuario = emp.nombre || emp.Emp_Nombre || "Usuario";
     
-    // Redactamos el correo profesional
-    const subject = encodeURIComponent("Solicitud de Restablecimiento de Contraseña - ZYRA Command");
+    // Redactamos el correo profesional basado en el nuevo diseño
+    const subject = encodeURIComponent("Restablecimiento de contraseña - ZYRA Command");
     const body = encodeURIComponent(
-      `Hola ${emp.nombre || emp.Emp_Nombre},\n\n` +
-      `Se ha recibido su solicitud para restablecer su contraseña de acceso para ZYRA.\n\n` +
-      `Por seguridad y rapidez, se ha generado la siguiente clave temporal para su cuenta:\n` +
-      `----------------------------------------\n` +
-      `NUEVA CONTRASEÑA: ${newTempPassword}\n` +
-      `----------------------------------------\n\n` +
-      `Por favor, utilice esta contraseña para acceder al sistema con su correo personal. Una vez dentro, podrá cambiarla desde su sección de perfil.\n\n` +
-      `Nota: Si recibió un correo automático de Firebase, también puede utilizar el enlace que se encuentra en dicho mensaje.\n\n` +
+      `Hola ${nombreUsuario},\n\n` +
+      `Hemos recibido una solicitud para restablecer la contraseña de acceso a su cuenta en ZYRA.\n\n` +
+      `ZYRA | SISTEMA DE GESTIÓN\n` +
+      `------------------------------------------------------------\n` +
+      `Por seguridad, se ha generado la siguiente CONTRASEÑA TEMPORAL:\n\n` +
+      `>>> ${newTempPassword} <<<\n\n` +
+      `------------------------------------------------------------\n\n` +
+      `Utilice esta contraseña para iniciar sesión en la plataforma. Una vez dentro, le recomendamos cambiarla inmediatamente desde la sección de perfil.\n\n` +
+      `Si también recibió un correo automático de Firebase, puede utilizar el enlace de restablecimiento incluido en ese mensaje como método alternativo.\n\n` +
+      `Si usted no solicitó este cambio, le recomendamos contactar con el administrador del sistema.\n\n` +
       `Atentamente,\n` +
-      `Administración ZYRA Command`
+      `Administración del Sistema\n` +
+      `ZYRA Command`
     );
     
     // Abrimos Gmail directamente
@@ -209,14 +213,14 @@ export default function EmployeesPage() {
       // También enviamos el oficial de Firebase como respaldo
       await sendPasswordResetEmail(auth, emp.emailPersonal);
       toast({ 
-        title: "Borrador preparado", 
-        description: "Se ha abierto Gmail con la clave temporal y se envió el enlace oficial."
+        title: "Mensaje generado", 
+        description: "Se ha abierto Gmail con el nuevo formato profesional."
       });
     } catch (e: any) {
       toast({ 
         variant: "destructive", 
         title: "Aviso", 
-        description: "Se abrió Gmail, pero el servicio automático de Firebase reportó un error: " + e.message
+        description: "Se abrió Gmail, pero el servicio de Firebase reportó un error."
       });
     }
   };
