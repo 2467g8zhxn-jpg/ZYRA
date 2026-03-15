@@ -27,6 +27,30 @@
       },
       "required": ["uid", "nombre", "rol"]
     },
+    "ProjectMaterial": {
+      "title": "Assigned Material",
+      "description": "Material asignado a un proyecto para verificación del empleado.",
+      "type": "object",
+      "properties": {
+        "nombre": { "type": "string" },
+        "cantidad_esperada": { "type": "number" },
+        "estado_verificacion": { "type": "boolean" },
+        "nota_faltante": { "type": "string" }
+      }
+    },
+    "InventoryHistory": {
+      "title": "Inventory Log",
+      "description": "Registro de salida de materiales a obra.",
+      "type": "object",
+      "properties": {
+        "mensaje": { "type": "string" },
+        "empleadoID": { "type": "string" },
+        "empleadoNombre": { "type": "string" },
+        "proyectoID": { "type": "string" },
+        "fecha": { "type": "string", "format": "date-time" },
+        "detalles_materiales": { "type": "array", "items": { "$ref": "#/entities/ProjectMaterial" } }
+      }
+    },
     "ProjectChecklist": {
       "title": "Initial Checklist",
       "description": "Validación de seguridad y herramientas antes de iniciar la jornada.",
@@ -69,9 +93,17 @@
       "schema": "ProjectChecklist",
       "description": "Subcolección de validaciones iniciales por jornada."
     },
+    "/proyectos/{projectId}/materiales_asignados/{materialId}": {
+      "schema": "ProjectMaterial",
+      "description": "Materiales asignados por el admin."
+    },
     "/reportes/{reportId}": {
       "schema": "Report",
       "description": "Colección de reportes operacionales."
+    },
+    "/historial_inventario/{logId}": {
+      "schema": "InventoryHistory",
+      "description": "Log global de movimientos de inventario."
     }
   }
 }
