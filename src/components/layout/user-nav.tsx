@@ -69,9 +69,11 @@ export function UserNav() {
               </DropdownMenuItem>
             </>
           )}
-          <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
-            <Settings className="mr-2 h-4 w-4 text-accent" />
-            <span className="text-xs font-bold">Configuración</span>
+          <DropdownMenuItem asChild>
+            <Link href="/settings" className="focus:bg-white/5 cursor-pointer py-2 flex items-center w-full">
+              <Settings className="mr-2 h-4 w-4 text-accent" />
+              <span className="text-xs font-bold">Configuración</span>
+            </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator className="bg-white/5" />
