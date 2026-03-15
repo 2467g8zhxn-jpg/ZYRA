@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -48,20 +49,20 @@ export function AppSidebar() {
   ];
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4 border-b border-white/5">
+    <Sidebar collapsible="icon" className="border-r border-border">
+      <SidebarHeader className="p-4 border-b border-border">
         <div className="flex items-center gap-2 px-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
-            <Zap className="h-5 w-5 text-white" />
+            <Zap className="h-5 w-5 text-accent-foreground" />
           </div>
-          <span className="text-xl font-bold tracking-tight text-white group-data-[collapsible=icon]:hidden">
+          <span className="text-xl font-bold tracking-tight text-foreground group-data-[collapsible=icon]:hidden">
             ZYRA <span className="text-accent">{isAdmin ? "COMMAND" : "OPERATIVO"}</span>
           </span>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground">
+          <SidebarGroupLabel className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest">
             {isAdmin ? t.nav.admin_panel : t.nav.general}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -75,8 +76,8 @@ export function AppSidebar() {
                     className="hover:bg-accent/10 active:bg-accent/20"
                   >
                     <a href={item.href} className="flex items-center gap-3">
-                      <item.icon className={pathname === item.href ? "text-accent" : ""} />
-                      <span className="font-medium">{item.title}</span>
+                      <item.icon className={pathname === item.href ? "text-accent" : "text-muted-foreground"} />
+                      <span className="font-medium text-foreground">{item.title}</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

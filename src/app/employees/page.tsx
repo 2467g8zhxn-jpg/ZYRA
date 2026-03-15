@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -33,7 +34,7 @@ import {
   DialogFooter,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { Users, Plus, Search, Mail, Phone, ShieldCheck, UserCircle, Star, Lock, Key, Copy } from "lucide-react";
+import { Users, Plus, Search, Mail, ShieldCheck, UserCircle, Star, Lock, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -150,7 +151,7 @@ export default function EmployeesPage() {
           <div className="p-4 rounded-full bg-destructive/10">
             <Users className="h-12 w-12 text-destructive" />
           </div>
-          <h2 className="text-2xl font-bold text-white">{t.common.error}</h2>
+          <h2 className="text-2xl font-bold text-foreground">{t.common.error}</h2>
           <p className="text-muted-foreground max-w-md">{t.employees.subtitle}</p>
         </div>
       </DashboardLayout>
@@ -162,7 +163,7 @@ export default function EmployeesPage() {
       <div className="max-w-7xl mx-auto space-y-8 font-body">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
-            <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <UserCircle className="h-8 w-8 text-accent" /> {t.employees.title}
             </h2>
             <p className="text-muted-foreground">{t.employees.subtitle}</p>
@@ -177,7 +178,7 @@ export default function EmployeesPage() {
                 <Plus className="h-4 w-4" /> {t.employees.register}
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-white/10 text-white sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg">
               {!showCredentials ? (
                 <>
                   <DialogHeader>
@@ -190,7 +191,7 @@ export default function EmployeesPage() {
                       <Input 
                         id="name" 
                         placeholder="..." 
-                        className="bg-white/5 border-white/10"
+                        className="bg-muted/50 border-border"
                         value={newEmployee.Emp_Nombre}
                         onChange={(e) => setNewEmployee({...newEmployee, Emp_Nombre: e.target.value})}
                       />
@@ -201,7 +202,7 @@ export default function EmployeesPage() {
                         <Input 
                           type="email"
                           placeholder="..." 
-                          className="bg-white/5 border-white/10"
+                          className="bg-muted/50 border-border"
                           value={newEmployee.Emp_CorreoPersonal}
                           onChange={(e) => setNewEmployee({...newEmployee, Emp_CorreoPersonal: e.target.value})}
                         />
@@ -210,7 +211,7 @@ export default function EmployeesPage() {
                         <Label className="text-xs uppercase font-bold text-muted-foreground">{t.employees.phone}</Label>
                         <Input 
                           placeholder="+..." 
-                          className="bg-white/5 border-white/10"
+                          className="bg-muted/50 border-border"
                           value={newEmployee.Emp_Telefono}
                           onChange={(e) => setNewEmployee({...newEmployee, Emp_Telefono: e.target.value})}
                         />
@@ -238,14 +239,14 @@ export default function EmployeesPage() {
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t.employees.access_email}</Label>
                       <div className="flex gap-2">
-                        <Input readOnly value={generatedCreds.email} className="bg-white/5 border-white/10 font-mono text-sm" />
+                        <Input readOnly value={generatedCreds.email} className="bg-muted/50 border-border font-mono text-sm" />
                         <Button variant="outline" size="icon" onClick={() => copyToClipboard(generatedCreds.email)}><Copy className="h-4 w-4" /></Button>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">PASSWORD</Label>
                       <div className="flex gap-2">
-                        <Input readOnly value={generatedCreds.password} className="bg-white/5 border-white/10 font-mono text-sm text-accent" />
+                        <Input readOnly value={generatedCreds.password} className="bg-muted/50 border-border font-mono text-sm text-accent" />
                         <Button variant="outline" size="icon" onClick={() => copyToClipboard(generatedCreds.password)}><Copy className="h-4 w-4" /></Button>
                       </div>
                     </div>
@@ -256,7 +257,7 @@ export default function EmployeesPage() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button className="bg-white text-black hover:bg-white/90 w-full font-bold" onClick={() => setIsCreateDialogOpen(false)}>
+                    <Button className="w-full font-bold" onClick={() => setIsCreateDialogOpen(false)}>
                       {t.common.understood}
                     </Button>
                   </DialogFooter>
@@ -266,13 +267,13 @@ export default function EmployeesPage() {
           </Dialog>
         </div>
 
-        <Card className="bg-card border-white/5 shadow-2xl overflow-hidden">
-          <CardHeader className="border-b border-white/5 bg-white/2">
+        <Card className="shadow-2xl overflow-hidden">
+          <CardHeader className="border-b bg-muted/30">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-white text-lg font-bold">{t.employees.payroll}</CardTitle>
+              <CardTitle className="text-foreground text-lg font-bold">{t.employees.payroll}</CardTitle>
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder={t.common.search} className="pl-10 bg-white/5 border-white/5 text-xs h-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <Input placeholder={t.common.search} className="pl-10 bg-background border-border text-xs h-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
             </div>
           </CardHeader>
@@ -281,8 +282,8 @@ export default function EmployeesPage() {
               <div className="flex items-center justify-center p-12"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent"></div></div>
             ) : filteredEmployees.length > 0 ? (
               <Table>
-                <TableHeader className="bg-white/5">
-                  <TableRow className="border-white/5 hover:bg-transparent">
+                <TableHeader className="bg-muted/10">
+                  <TableRow className="border-border hover:bg-transparent">
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.employees.full_name}</TableHead>
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.employees.access_email}</TableHead>
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.employees.role}</TableHead>
@@ -292,29 +293,29 @@ export default function EmployeesPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredEmployees.map((emp) => (
-                    <TableRow key={emp.id} className="border-white/5 hover:bg-white/2 transition-colors">
+                    <TableRow key={emp.id} className="border-border hover:bg-muted/5 transition-colors">
                       <TableCell className="py-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-full bg-accent/20 flex items-center justify-center border border-accent/30">
+                          <div className="h-9 w-9 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">
                             <span className="text-xs font-bold text-accent">{(emp.Emp_Nombre || emp.nombre || "?").substring(0,2).toUpperCase()}</span>
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white">{emp.Emp_Nombre || emp.nombre}</p>
+                            <p className="text-sm font-bold text-foreground">{emp.Emp_Nombre || emp.nombre}</p>
                             <p className="text-[10px] text-muted-foreground uppercase">ID: {emp.id.substring(0,8)}</p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 text-xs text-white"><Mail className="h-3 w-3 text-accent" /> {emp.emailAcceso || emp.email || "N/A"}</div>
+                        <div className="flex items-center gap-2 text-xs text-foreground"><Mail className="h-3 w-3 text-accent" /> {emp.emailAcceso || emp.email || "N/A"}</div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={emp.rol === 'admin' ? "bg-yellow-500/10 text-yellow-500" : "bg-primary/10 text-primary"}>
+                        <Badge variant="outline" className={emp.rol === 'admin' ? "border-yellow-500/50 text-yellow-600" : "border-primary/50 text-primary"}>
                           {emp.rol === 'admin' ? t.common.admin : t.common.employee}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-4">
-                          <span className="text-xs font-bold text-white">{t.dashboard.level} {emp.nivel || 1}</span>
+                          <span className="text-xs font-bold text-foreground">{t.dashboard.level} {emp.nivel || 1}</span>
                           <div className="flex items-center gap-1"><Star className="h-3 w-3 text-yellow-500 fill-yellow-500" /><span className="text-xs text-muted-foreground">{emp.puntos || 0} pts</span></div>
                         </div>
                       </TableCell>
@@ -328,7 +329,7 @@ export default function EmployeesPage() {
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center px-6">
                 <Users className="h-8 w-8 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-bold text-white uppercase tracking-tighter">{t.common.no_results}</h3>
+                <h3 className="text-lg font-bold text-foreground uppercase tracking-tighter">{t.common.no_results}</h3>
               </div>
             )}
           </CardContent>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { 
@@ -35,53 +36,53 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-9 w-9 rounded-full border border-white/10 hover:bg-white/5 p-0 overflow-hidden">
+        <Button variant="ghost" className="relative h-9 w-9 rounded-full border border-border hover:bg-muted p-0 overflow-hidden">
           <Avatar className="h-full w-full">
             <AvatarImage src={profile?.photoURL} alt={profile?.nombre} />
-            <AvatarFallback className="bg-accent text-white font-bold text-xs">{nameInitial}</AvatarFallback>
+            <AvatarFallback className="bg-accent text-accent-foreground font-bold text-xs">{nameInitial}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 bg-card border-white/10 text-white shadow-2xl" align="end" forceMount>
+      <DropdownMenuContent className="w-56 bg-card border-border shadow-2xl" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-bold leading-none">{profile?.nombre}</p>
+            <p className="text-sm font-bold leading-none text-foreground">{profile?.nombre}</p>
             <p className="text-[10px] font-medium leading-none text-muted-foreground uppercase tracking-widest mt-1">
               {isAdmin ? "ADMIN COMMAND" : "TECNICO OPERATIVO"}
             </p>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-white/5" />
+        <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href="/profile" className="focus:bg-white/5 cursor-pointer py-2 flex items-center w-full">
+            <Link href="/profile" className="cursor-pointer py-2 flex items-center w-full">
               <User className="mr-2 h-4 w-4 text-accent" />
-              <span className="text-xs font-bold">{t.nav.profile}</span>
+              <span className="text-xs font-bold text-foreground">{t.nav.profile}</span>
             </Link>
           </DropdownMenuItem>
           {!isAdmin && (
             <>
-              <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
+              <DropdownMenuItem className="py-2">
                 <Zap className="mr-2 h-4 w-4 text-accent" />
-                <span className="text-xs font-bold">{t.dashboard.level} {profile?.nivel || 1}</span>
+                <span className="text-xs font-bold text-foreground">{t.dashboard.level} {profile?.nivel || 1}</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
+              <DropdownMenuItem className="py-2">
                 <Trophy className="mr-2 h-4 w-4 text-accent" />
-                <span className="text-xs font-bold">{profile?.puntos || 0} {t.dashboard.points}</span>
+                <span className="text-xs font-bold text-foreground">{profile?.puntos || 0} {t.dashboard.points}</span>
               </DropdownMenuItem>
             </>
           )}
           <DropdownMenuItem asChild>
-            <Link href="/settings" className="focus:bg-white/5 cursor-pointer py-2 flex items-center w-full">
+            <Link href="/settings" className="cursor-pointer py-2 flex items-center w-full">
               <Settings className="mr-2 h-4 w-4 text-accent" />
-              <span className="text-xs font-bold">{t.nav.settings}</span>
+              <span className="text-xs font-bold text-foreground">{t.nav.settings}</span>
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator className="bg-white/5" />
+        <DropdownMenuSeparator />
         <DropdownMenuItem 
           onClick={handleSignOut}
-          className="focus:bg-destructive/10 text-destructive cursor-pointer py-2 font-bold"
+          className="text-destructive cursor-pointer py-2 font-bold"
         >
           <LogOut className="mr-2 h-4 w-4" />
           <span className="text-xs">{t.nav.logout}</span>
