@@ -90,6 +90,12 @@ export default function TeamPage() {
   const { data: teams, isLoading: teamsLoading } = useCollection(teamsQuery);
   const { data: employees } = useCollection(employeesQuery);
 
+  // Filtrar empleados que tengan un nombre válido y no sean admins
+  const validEmployees = useMemo(() => {
+    if (!employees) return [];
+    return employees.filter(emp => (emp.nombre || emp.Emp_Nombre) && emp.rol !== 'admin');
+  }, [employees]);
+
   const filteredTeams = useMemo(() => {
     if (!teams) return [];
     return teams.filter(t => 
@@ -158,11 +164,11 @@ export default function TeamPage() {
     setLoading(true);
     
     const teamRef = doc(db, "teams", selectedTeam.id);
-    const leader = employees?.find(e => e.id === editTeamData.leaderId);
+    const leader = validEmployees?.find(e => e.id === editTeamData.leaderId);
     
     const updateData = {
       ...editTeamData,
-      leaderName: leader?.nombre || editTeamData.leaderName
+      leaderName: (leader?.nombre || leader?.Emp_Nombre) || editTeamData.leaderName
     };
 
     try {
@@ -229,13 +235,13 @@ export default function TeamPage() {
                     <div className="space-y-2">
                       <Label className="text-xs uppercase font-bold text-muted-foreground">{t.teams.leader}</Label>
                       <Select value={newTeam.leaderId} onValueChange={(val) => {
-                        const emp = employees?.find(e => e.id === val);
-                        setNewTeam({ ...newTeam, leaderId: val, leaderName: emp?.nombre || "Técnico Zyra" });
+                        const emp = validEmployees?.find(e => e.id === val);
+                        setNewTeam({ ...newTeam, leaderId: val, leaderName: (emp?.nombre || emp?.Emp_Nombre) || "Técnico Zyra" });
                       }}>
                         <SelectTrigger className="bg-white/5 border-white/10 h-10"><SelectValue /></SelectTrigger>
                         <SelectContent className="bg-card border-white/10 text-white">
-                          {employees?.filter(e => e.rol !== 'admin').map(emp => (
-                            <SelectItem key={emp.id} value={emp.id}>{emp.nombre}</SelectItem>
+                          {validEmployees.map(emp => (
+                            <SelectItem key={emp.id} value={emp.id}>{emp.nombre || emp.Emp_Nombre}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -245,10 +251,10 @@ export default function TeamPage() {
                     <Label className="text-xs uppercase font-bold text-muted-foreground">{t.teams.members}</Label>
                     <ScrollArea className="bg-white/5 border border-white/10 rounded-lg p-3 max-h-[220px]">
                       <div className="divide-y divide-white/5">
-                        {employees?.filter(e => e.rol !== 'admin').map(emp => (
+                        {validEmployees.map(emp => (
                           <div key={emp.id} className="flex items-center space-x-3 py-2.5">
                             <Checkbox id={`emp-${emp.id}`} checked={newTeam.members.includes(emp.id)} onCheckedChange={() => handleToggleMember(emp.id)} />
-                            <label htmlFor={`emp-${emp.id}`} className="text-sm font-medium text-white/80 cursor-pointer">{emp.nombre}</label>
+                            <label htmlFor={`emp-${emp.id}`} className="text-sm font-medium text-white/80 cursor-pointer">{emp.nombre || emp.Emp_Nombre}</label>
                           </div>
                         ))}
                       </div>
@@ -342,8 +348,8 @@ export default function TeamPage() {
                   <Select value={editTeamData?.leaderId} onValueChange={(val) => setEditTeamData({...editTeamData, leaderId: val})}>
                     <SelectTrigger className="bg-white/5 border-white/10 h-10"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-card border-white/10 text-white">
-                      {employees?.filter(e => e.rol !== 'admin').map(emp => (
-                        <SelectItem key={emp.id} value={emp.id}>{emp.nombre}</SelectItem>
+                      {validEmployees.map(emp => (
+                        <SelectItem key={emp.id} value={emp.id}>{emp.nombre || emp.Emp_Nombre}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -353,14 +359,14 @@ export default function TeamPage() {
                 <Label className="text-xs uppercase font-bold text-muted-foreground">{t.teams.members}</Label>
                 <ScrollArea className="bg-white/5 border border-white/10 rounded-lg p-3 max-h-[220px]">
                   <div className="divide-y divide-white/5">
-                    {employees?.filter(e => e.rol !== 'admin').map(emp => (
+                    {validEmployees.map(emp => (
                       <div key={emp.id} className="flex items-center space-x-3 py-2.5">
                         <Checkbox 
                           id={`edit-emp-${emp.id}`} 
                           checked={editTeamData?.members.includes(emp.id)} 
                           onCheckedChange={() => handleToggleEditMember(emp.id)} 
                         />
-                        <label htmlFor={`edit-emp-${emp.id}`} className="text-sm font-medium text-white/80 cursor-pointer">{emp.nombre}</label>
+                        <label htmlFor={`edit-emp-${emp.id}`} className="text-sm font-medium text-white/80 cursor-pointer">{emp.nombre || emp.Emp_Nombre}</label>
                       </div>
                     ))}
                   </div>
