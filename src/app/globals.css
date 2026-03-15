@@ -24,7 +24,7 @@
     --input: 260 13% 90%;
     --ring: 271 76% 53%;
     --radius: 0.75rem;
-    --base-font-size: 14px;
+    --base-font-size: 16px;
     --chart-1: 189 86% 66%;
     --chart-2: 271 76% 53%;
   }
@@ -74,9 +74,11 @@
   * {
     @apply border-border;
   }
+  html {
+    font-size: var(--base-font-size);
+  }
   body {
     @apply bg-background text-foreground font-body antialiased;
-    font-size: var(--base-font-size);
   }
 }
 

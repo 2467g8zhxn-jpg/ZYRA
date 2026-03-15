@@ -29,6 +29,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         if (parsed.darkMode !== undefined) setDarkMode(parsed.darkMode);
         if (parsed.themeColor) setThemeColor(parsed.themeColor);
         if (parsed.fontSize) {
+          // Fix for possible array format from previous implementations
           const size = Array.isArray(parsed.fontSize) ? parsed.fontSize[0] : parsed.fontSize;
           setFontSize(size);
         }
@@ -39,7 +40,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Apply theme classes and variables but DO NOT save to localStorage here
+  // Apply theme classes and variables globally
   useEffect(() => {
     if (!mounted) return;
 
@@ -50,6 +51,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
     
     document.documentElement.setAttribute('data-theme', themeColor);
+    // Apply font size to HTML to scale REM units globally
     document.documentElement.style.setProperty('--base-font-size', `${fontSize}px`);
   }, [darkMode, themeColor, fontSize, mounted]);
 
@@ -57,7 +59,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('zyra-settings', JSON.stringify({ 
       darkMode: settings.darkMode, 
       themeColor: settings.themeColor, 
-      fontSize: [settings.fontSize] 
+      fontSize: settings.fontSize 
     }));
   };
 
