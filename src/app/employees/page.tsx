@@ -79,8 +79,8 @@ export default function EmployeesPage() {
   const filteredEmployees = useMemo(() => {
     if (!employees) return [];
     return employees.filter(e => 
-      (e.Emp_Nombre || e.nombre)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (e.emailAcceso || e.email)?.toLowerCase().includes(searchTerm.toLowerCase())
+      (e.Emp_Nombre || e.nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (e.emailAcceso || e.email || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [employees, searchTerm]);
 
@@ -96,9 +96,7 @@ export default function EmployeesPage() {
     const firstInitial = parts[0].charAt(0);
     
     let lastName = "";
-    if (parts.length >= 4) {
-      lastName = parts[2];
-    } else if (parts.length >= 2) {
+    if (parts.length >= 2) {
       lastName = parts[1];
     } else {
       lastName = parts[0];
@@ -238,32 +236,32 @@ export default function EmployeesPage() {
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name" className="text-xs uppercase font-bold text-muted-foreground">Nombre</Label>
+                      <Label htmlFor="name" className="text-xs uppercase font-bold text-muted-foreground">{t.employees.full_name}</Label>
                       <Input 
                         id="name" 
                         placeholder="Nombre completo del empleado" 
                         className="bg-muted/50 border-border text-foreground"
-                        value={newEmployee.Emp_Nombre}
+                        value={newEmployee.Emp_Nombre || ""}
                         onChange={(e) => setNewEmployee({...newEmployee, Emp_Nombre: e.target.value})}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-xs uppercase font-bold text-muted-foreground">E-mail</Label>
+                        <Label className="text-xs uppercase font-bold text-muted-foreground">{t.employees.personal_email}</Label>
                         <Input 
                           type="email"
                           placeholder="correo@ejemplo.com" 
                           className="bg-muted/50 border-border text-foreground"
-                          value={newEmployee.Emp_CorreoPersonal}
+                          value={newEmployee.Emp_CorreoPersonal || ""}
                           onChange={(e) => setNewEmployee({...newEmployee, Emp_CorreoPersonal: e.target.value})}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs uppercase font-bold text-muted-foreground">Teléfono</Label>
+                        <Label className="text-xs uppercase font-bold text-muted-foreground">{t.employees.phone}</Label>
                         <Input 
                           placeholder="+52 000 000 0000" 
                           className="bg-muted/50 border-border text-foreground"
-                          value={newEmployee.Emp_Telefono}
+                          value={newEmployee.Emp_Telefono || ""}
                           onChange={(e) => setNewEmployee({...newEmployee, Emp_Telefono: e.target.value})}
                         />
                       </div>
@@ -290,14 +288,14 @@ export default function EmployeesPage() {
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">EMAIL DE ACCESO ZYRA</Label>
                       <div className="flex gap-2">
-                        <Input readOnly value={generatedCreds.email} className="bg-muted/50 border-border font-mono text-sm text-foreground" />
+                        <Input readOnly value={generatedCreds.email || ""} className="bg-muted/50 border-border font-mono text-sm text-foreground" />
                         <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.email)}><Copy className="h-4 w-4" /></Button>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">PASSWORD</Label>
                       <div className="flex gap-2">
-                        <Input readOnly value={generatedCreds.password} className="bg-muted/50 border-border font-mono text-sm text-accent" />
+                        <Input readOnly value={generatedCreds.password || ""} className="bg-muted/50 border-border font-mono text-sm text-accent" />
                         <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.password)}><Copy className="h-4 w-4" /></Button>
                       </div>
                     </div>
@@ -340,7 +338,7 @@ export default function EmployeesPage() {
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.employees.full_name}</TableHead>
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.employees.access_email}</TableHead>
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.employees.level_points}</TableHead>
-                    <TableHead className="text-right text-muted-foreground uppercase text-[10px] font-bold">{t.common.actions}</TableHead>
+                    <TableHead className="text-center text-muted-foreground uppercase text-[10px] font-bold">{t.common.actions}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -366,8 +364,8 @@ export default function EmployeesPage() {
                           <div className="flex items-center gap-1"><Star className="h-3 w-3 text-yellow-500 fill-yellow-500" /><span className="text-xs text-muted-foreground">{emp.puntos || 0} pts</span></div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
                           <Button variant="ghost" size="sm" className="text-accent hover:bg-accent/10 font-bold text-[10px]">{t.employees.view_profile}</Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
