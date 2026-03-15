@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import DashboardLayout from "../dashboard/layout";
 import { useFirestore, useCollection, useUser } from "@/firebase";
-import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
 import { 
   Card, 
   CardHeader, 
@@ -76,7 +76,13 @@ export default function MaterialsPage() {
     return collection(db, "materiales");
   }, [db]);
 
+  const templatesQuery = useMemo(() => {
+    if (!db) return null;
+    return collection(db, "checklist_servicio");
+  }, [db]);
+
   const { data: materials, loading: materialsLoading } = useCollection(materialsQuery);
+  const { data: templates, loading: templatesLoading } = useCollection(templatesQuery);
 
   const filteredMaterials = useMemo(() => {
     if (!materials) return [];
@@ -84,6 +90,36 @@ export default function MaterialsPage() {
       m.Mat_Nombre?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [materials, searchTerm]);
+
+  // Map templates for easy access
+  const serviceTemplates = useMemo(() => {
+    const map: Record<string, any> = {
+      'Instalación': {
+        items: [
+          { name: "Paneles Fotovoltaicos", qty: 24 },
+          { name: "Inversor Híbrido", qty: 1 },
+          { name: "Estructura de Aluminio", qty: 4 },
+          { name: "Cable Solar 6mm", qty: 100 },
+        ]
+      },
+      'Mantenimiento': {
+        items: [
+          { name: "Líquido Limpiador Dieléctrico", qty: 2 },
+          { name: "Terminales MC4", qty: 10 },
+          { name: "Fusibles de Protección", qty: 5 },
+        ]
+      }
+    };
+
+    if (templates) {
+      templates.forEach(t => {
+        if (t.id === 'Instalación' || t.id === 'Mantenimiento') {
+          map[t.id] = t;
+        }
+      });
+    }
+    return map;
+  }, [templates]);
 
   const handleCreateMaterial = async () => {
     if (!db) return;
@@ -114,31 +150,36 @@ export default function MaterialsPage() {
   };
 
   const handleEditTemplate = (type: string) => {
-    const defaultMaterials = type === 'Instalación' 
-      ? [
-          { name: "Paneles Fotovoltaicos", qty: 24 },
-          { name: "Inversor Híbrido", qty: 1 },
-          { name: "Estructura de Aluminio", qty: 4 },
-          { name: "Cable Solar 6mm", qty: 100 },
-        ]
-      : [
-          { name: "Líquido Limpiador Dieléctrico", qty: 2 },
-          { name: "Terminales MC4", qty: 10 },
-          { name: "Fusibles de Protección", qty: 5 },
-        ];
-    
-    setEditingTemplate({ type, items: defaultMaterials });
+    setEditingTemplate({ 
+      type, 
+      items: [...(serviceTemplates[type]?.items || [])] 
+    });
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
+    if (!db || !editingTemplate) return;
     setLoading(true);
-    // Simulación de guardado de configuración CHS/CSD
-    setTimeout(() => {
-      toast({ title: "Plantilla Actualizada", description: `La configuración para ${editingTemplate.type} ha sido guardada.` });
+    try {
+      const templateRef = doc(db, "checklist_servicio", editingTemplate.type);
+      await setDoc(templateRef, {
+        items: editingTemplate.items,
+        updatedAt: serverTimestamp(),
+      });
+      toast({ 
+        title: "Plantilla Actualizada", 
+        description: `La configuración para ${editingTemplate.type} ha sido guardada en la base de datos.` 
+      });
       setIsEditDialogOpen(false);
+    } catch (e: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "Error al guardar", 
+        description: "No se pudo actualizar la plantilla en Firestore." 
+      });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   if (!isAdmin) {
@@ -330,12 +371,7 @@ export default function MaterialsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="divide-y divide-white/5 bg-white/2 rounded-lg border border-white/5 overflow-hidden">
-                    {[
-                      { name: "Paneles Fotovoltaicos", qty: 24 },
-                      { name: "Inversor Híbrido", qty: 1 },
-                      { name: "Estructura de Aluminio", qty: 4 },
-                      { name: "Cable Solar 6mm", qty: 100 },
-                    ].map((item, i) => (
+                    {serviceTemplates['Instalación']?.items.map((item: any, i: number) => (
                       <div key={i} className="flex items-center justify-between p-3">
                         <span className="text-xs text-white">{item.name}</span>
                         <span className="text-xs font-bold text-accent">{item.qty} unid</span>
@@ -366,11 +402,7 @@ export default function MaterialsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="divide-y divide-white/5 bg-white/2 rounded-lg border border-white/5 overflow-hidden">
-                    {[
-                      { name: "Líquido Limpiador Dieléctrico", qty: 2 },
-                      { name: "Terminales MC4", qty: 10 },
-                      { name: "Fusibles de Protección", qty: 5 },
-                    ].map((item, i) => (
+                    {serviceTemplates['Mantenimiento']?.items.map((item: any, i: number) => (
                       <div key={i} className="flex items-center justify-between p-3">
                         <span className="text-xs text-white">{item.name}</span>
                         <span className="text-xs font-bold text-primary">{item.qty} unid</span>
