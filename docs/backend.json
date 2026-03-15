@@ -56,16 +56,24 @@
     "Team": {
       "title": "Team",
       "type": "object",
-      "description": "Cuadrilla operativa de trabajo.",
+      "description": "Cuadrilla operativa de trabajo con especialización y miembros asignados.",
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
         "leaderId": { "type": "string" },
         "leaderName": { "type": "string" },
-        "memberCount": { "type": "number" },
+        "members": { 
+          "type": "array", 
+          "items": { "type": "string" },
+          "description": "Lista de IDs de empleados que pertenecen al equipo."
+        },
+        "type": { 
+          "type": "string", 
+          "enum": ["Instalación", "Mantenimiento"] 
+        },
         "status": { "type": "string", "enum": ["Activo", "Disponible"] }
       },
-      "required": ["name", "leaderId"]
+      "required": ["name", "leaderId", "type"]
     },
     "Project": {
       "$schema": "http://json-schema.org/draft-07/schema#",
