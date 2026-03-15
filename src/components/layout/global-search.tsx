@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -32,15 +33,15 @@ export function GlobalSearch() {
   const [isOpen, setIsOpen] = useState(false);
   const isAdmin = profile?.rol === 'admin';
 
-  // Consultas base para todas las entidades
-  const projectsQuery = useMemoFirebase(() => db ? collection(db, "proyectos") : null, [db]);
+  // Consultas base para todas las entidades - Solo se activan si hay un usuario autenticado
+  const projectsQuery = useMemoFirebase(() => (db && user) ? collection(db, "proyectos") : null, [db, user]);
   const clientsQuery = useMemoFirebase(() => (db && isAdmin) ? collection(db, "clientes") : null, [db, isAdmin]);
   const employeesQuery = useMemoFirebase(() => (db && isAdmin) ? collection(db, "users") : null, [db, isAdmin]);
   const reportsQuery = useMemoFirebase(() => {
-    if (!db) return null;
+    if (!db || !user) return null;
     if (isAdmin) return collection(db, "reports");
     // Los empleados solo buscan en sus propios reportes
-    return query(collection(db, "reports"), where("employeeId", "==", user?.uid || ""));
+    return query(collection(db, "reports"), where("employeeId", "==", user.uid));
   }, [db, isAdmin, user]);
 
   const { data: projects, isLoading: pL } = useCollection(projectsQuery);

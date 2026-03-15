@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
@@ -36,15 +37,15 @@ import { startOfDay, subWeeks, isAfter, format, startOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
 
 export default function DashboardPage() {
-  const { profile, loading: userLoading } = useUser();
+  const { profile, loading: userLoading, user } = useUser();
   const db = useFirestore();
   const { t } = useI18n();
   const isAdmin = profile?.rol === 'admin';
 
-  // Admin Queries
-  const projectsQuery = useMemoFirebase(() => db ? collection(db, "proyectos") : null, [db]);
-  const reportsQuery = useMemoFirebase(() => db ? collection(db, "reports") : null, [db]);
-  const usersQuery = useMemoFirebase(() => db ? collection(db, "users") : null, [db]);
+  // Admin Queries - Solo se activan si el usuario es administrador y está autenticado
+  const projectsQuery = useMemoFirebase(() => (db && isAdmin) ? collection(db, "proyectos") : null, [db, isAdmin]);
+  const reportsQuery = useMemoFirebase(() => (db && isAdmin) ? collection(db, "reports") : null, [db, isAdmin]);
+  const usersQuery = useMemoFirebase(() => (db && isAdmin) ? collection(db, "users") : null, [db, isAdmin]);
 
   const { data: projects, isLoading: projectsLoading } = useCollection(projectsQuery);
   const { data: reports, isLoading: reportsLoading } = useCollection(reportsQuery);
@@ -108,7 +109,7 @@ export default function DashboardPage() {
     return weeks;
   }, [reports]);
 
-  if (userLoading || projectsLoading || reportsLoading || usersLoading) {
+  if (userLoading || (isAdmin && (projectsLoading || reportsLoading || usersLoading))) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
