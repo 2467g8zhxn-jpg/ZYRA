@@ -1,3 +1,4 @@
+
 "use client";
 
 import DashboardLayout from "../dashboard/layout";
@@ -7,13 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { 
   MapPin, 
   ArrowRight, 
-  Activity, 
-  ShieldCheck, 
   Plus,
   Sparkles,
   Camera,
   Loader2,
-  FileText,
   Briefcase
 } from "lucide-react";
 import Image from "next/image";
@@ -39,10 +37,10 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogDescription, 
   DialogFooter,
   DialogTrigger
 } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { aiReportDraftingAssistant } from "@/ai/flows/ai-report-drafting-assistant-flow";
 
 export default function ProjectsPage() {
@@ -82,20 +80,12 @@ export default function ProjectsPage() {
 
   const projectsQuery = useMemoFirebase(() => {
     if (!db || !profile) return null;
-    if (isAdmin) {
-      return collection(db, "proyectos");
-    }
-    
+    if (isAdmin) return collection(db, "proyectos");
     if (myTeams && myTeams.length > 0) {
       const teamIds = myTeams.map(t => t.id);
       return query(collection(db, "proyectos"), where("assignedTeamId", "in", teamIds));
     }
-    
-    if (myTeams && myTeams.length === 0) {
-      return query(collection(db, "proyectos"), where("assignedTeamId", "==", "no-team-found"));
-    }
-
-    return null;
+    return query(collection(db, "proyectos"), where("assignedTeamId", "==", "no-team"));
   }, [db, isAdmin, profile, myTeams]);
 
   const teamsQuery = useMemoFirebase(() => {
@@ -106,21 +96,43 @@ export default function ProjectsPage() {
   const { data: firestoreProjects, isLoading: projectsLoading } = useCollection(projectsQuery);
   const { data: teams } = useCollection(teamsQuery);
 
-  const displayProjects = useMemo(() => {
-    return firestoreProjects || [];
-  }, [firestoreProjects]);
+  const createNotification = async (userId: string, title: string, message: string, type: string) => {
+    if (!db) return;
+    await addDoc(collection(db, "notifications"), {
+      userId,
+      title,
+      message,
+      type,
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+  };
 
   const handleCreateProject = async () => {
     if (!db) return;
     setLoading(true);
     try {
-      await addDoc(collection(db, "proyectos"), {
+      const projRef = await addDoc(collection(db, "proyectos"), {
         ...newProject,
         Pry_Estado: "Pendiente",
         progreso: 0,
         assignedTeamId: newProject.Eq_ID,
         fecha_creacion: new Date().toISOString(),
       });
+
+      // Notify team members
+      const selectedTeam = teams?.find(t => t.id === newProject.Eq_ID);
+      if (selectedTeam) {
+        for (const memberId of selectedTeam.members) {
+          await createNotification(
+            memberId,
+            "Proyecto Asignado",
+            `Tu equipo ha sido asignado al proyecto: ${newProject.Pry_Nombre_Proyecto}`,
+            "project"
+          );
+        }
+      }
+
       toast({ title: "¡Éxito!", description: "Proyecto creado correctamente." });
       setIsCreateDialogOpen(false);
       setNewProject({
@@ -185,6 +197,22 @@ export default function ProjectsPage() {
         imageUrl: project.imageUrl || "https://picsum.photos/seed/report-final/800/600"
       });
 
+      const currentPoints = profile.puntos || 0;
+      const currentLevel = profile.level || 1;
+      const newPoints = currentPoints + 50;
+      let newLevel = currentLevel;
+      
+      // Basic level up logic
+      if (newPoints >= currentLevel * 200) {
+        newLevel = currentLevel + 1;
+        await createNotification(
+          user.uid,
+          "¡SUBISTE DE NIVEL!",
+          `Felicidades, ahora eres Nivel ${newLevel}`,
+          "level"
+        );
+      }
+
       const userRef = doc(db, "users", user.uid);
       await setDoc(userRef, {
         projectStatus: {
@@ -195,7 +223,8 @@ export default function ProjectsPage() {
             ultimo_reporte: new Date().toISOString()
           }
         },
-        puntos: (profile?.puntos || 0) + 50 
+        puntos: newPoints,
+        level: newLevel
       }, { merge: true });
 
       toast({ title: "Reporte Enviado", description: "Has finalizado tu jornada con éxito. +50 pts." });
@@ -250,9 +279,7 @@ export default function ProjectsPage() {
               {isAdmin ? "Proyectos" : "Mis Proyectos"}
             </h2>
             <p className="text-xs md:text-sm text-muted-foreground">
-              {isAdmin 
-                ? "Gestión y creación de obras." 
-                : "Toca un proyecto para iniciar o finalizar tu jornada."}
+              {isAdmin ? "Gestión y creación de obras." : "Toca un proyecto para iniciar o finalizar tu jornada."}
             </p>
           </div>
           
@@ -314,9 +341,9 @@ export default function ProjectsPage() {
           )}
         </div>
 
-        {displayProjects.length > 0 ? (
+        {firestoreProjects && firestoreProjects.length > 0 ? (
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {displayProjects.map((project: any) => {
+            {firestoreProjects.map((project: any) => {
               const isEnCurso = profile?.projectStatus?.[project.id]?.en_curso;
               const statusColor = project.Pry_Estado === 'EnProceso' ? 'bg-emerald-500' : project.Pry_Estado === 'Finalizado' ? 'bg-primary' : 'bg-yellow-500';
 
@@ -365,10 +392,6 @@ export default function ProjectsPage() {
                       <Sheet open={isSheetOpen && selectedProject?.id === project.id} onOpenChange={(open) => {
                         setIsSheetOpen(open);
                         if (open) setSelectedProject(project);
-                        if (!open) {
-                          setReportContent("");
-                          setChecklist({ epp_completo: false, herramientas_listas: false, seguridad_area: false });
-                        }
                       }}>
                         <SheetTrigger asChild>
                           <Button 
@@ -476,9 +499,7 @@ export default function ProjectsPage() {
             </div>
             <h3 className="text-lg font-bold text-white uppercase tracking-tighter">Sin proyectos</h3>
             <p className="text-xs text-muted-foreground mt-2 max-w-[200px]">
-              {isAdmin 
-                ? "No hay obras registradas en el sistema." 
-                : "No tienes obras asignadas para hoy."}
+              {isAdmin ? "No hay obras registradas en el sistema." : "No tienes obras asignadas para hoy."}
             </p>
           </div>
         )}

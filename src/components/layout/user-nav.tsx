@@ -1,0 +1,80 @@
+
+"use client";
+
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuGroup, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useUser, useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import { Settings, LogOut, User, Zap, Trophy } from "lucide-react";
+
+export function UserNav() {
+  const { profile } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    router.push("/login");
+  };
+
+  const nameInitial = profile?.nombre?.substring(0, 1).toUpperCase() || "Z";
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="relative h-9 w-9 rounded-full border border-white/10 hover:bg-white/5">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-accent text-white font-bold text-xs">{nameInitial}</AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56 bg-card border-white/10 text-white shadow-2xl" align="end" forceMount>
+        <DropdownMenuLabel className="font-normal">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-bold leading-none">{profile?.nombre}</p>
+            <p className="text-[10px] font-medium leading-none text-muted-foreground uppercase tracking-widest mt-1">
+              {profile?.rol === 'admin' ? "ADMIN COMMAND" : "TECNICO OPERATIVO"}
+            </p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator className="bg-white/5" />
+        <DropdownMenuGroup>
+          <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
+            <User className="mr-2 h-4 w-4 text-accent" />
+            <span className="text-xs font-bold">Mi Perfil</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
+            <Zap className="mr-2 h-4 w-4 text-accent" />
+            <span className="text-xs font-bold">Nivel {profile?.nivel || 1}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
+            <Trophy className="mr-2 h-4 w-4 text-accent" />
+            <span className="text-xs font-bold">{profile?.puntos || 0} Puntos</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
+            <Settings className="mr-2 h-4 w-4 text-accent" />
+            <span className="text-xs font-bold">Configuración</span>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator className="bg-white/5" />
+        <DropdownMenuItem 
+          onClick={handleSignOut}
+          className="focus:bg-destructive/10 text-destructive cursor-pointer py-2 font-bold"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          <span className="text-xs">Cerrar Sesión</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

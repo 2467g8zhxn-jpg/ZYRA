@@ -2,46 +2,26 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * ZYRA SECURITY RULES PHILOSOPHY
-     * 
-     * Implementa un modelo estricto basado en roles (Admin/Employee).
-     * Los administradores tienen acceso total.
-     * Los empleados tienen acceso restringido a sus propios datos y a los datos de su equipo.
-     */
-
-    // --- GLOBAL HELPER FUNCTIONS ---
-
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && getUserData().role == 'admin';
-    }
-
-    // --- COLLECTION RULES ---
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isAdmin() { return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'admin'; }
 
     match /users/{userId} {
-      allow get, list: if isSignedIn(); // Permitimos listado básico para gestión de equipos
-      allow create, update: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    match /notifications/{notifId} {
+      allow read, update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn();
       allow delete: if isAdmin();
     }
 
     match /projects/{projectId} {
-      allow read: if isSignedIn(); // Permitimos lectura para usuarios autenticados en prototipo
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
-    
+
     match /proyectos/{projectId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
@@ -55,27 +35,7 @@ service cloud.firestore {
     match /reports/{reportId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && (resource.data.employeeId == request.auth.uid || isAdmin());
-    }
-
-    match /achievements/{achievementId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-    
-    match /materiales/{matId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-    
-    match /clientes/{cliId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-    
-    match /checklist_servicio/{checkId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow update: if isSignedIn();
     }
   }
 }

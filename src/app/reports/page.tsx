@@ -3,17 +3,14 @@
 
 import { useState, useMemo } from "react";
 import { 
-  FileText,
-  Search,
   Briefcase,
   Check,
   X,
   Clock,
   MapPin,
-  User,
   Building2,
   Hash,
-  Plus
+  Search
 } from "lucide-react";
 import DashboardLayout from "../dashboard/layout";
 import { format } from "date-fns";
@@ -24,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { cn } from "@/lib/utils";
-import { doc, updateDoc, collection, query, where } from "firebase/firestore";
+import { doc, updateDoc, collection, query, where, addDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -47,18 +44,13 @@ export default function ReportsPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
 
-  // Firestore connection
   const reportsQuery = useMemoFirebase(() => {
     if (!db || !profile) return null;
     if (isAdmin) {
       return collection(db, "reports");
     }
-    // Employees see reports from their team or their own
-    if (profile.teamId) {
-      return query(collection(db, "reports"), where("assignedTeamId", "==", profile.teamId));
-    }
-    return query(collection(db, "reports"), where("employeeId", "==", profile.uid || ""));
-  }, [db, isAdmin, profile]);
+    return query(collection(db, "reports"), where("employeeId", "==", user?.uid || ""));
+  }, [db, isAdmin, profile, user]);
 
   const projectsQuery = useMemoFirebase(() => {
     if (!db || !profile) return null;
@@ -71,13 +63,12 @@ export default function ReportsPage() {
   const filteredReports = useMemo(() => {
     const reports = firestoreReports || [];
     return reports.filter(report => {
-      const matchesSearch = 
-        (report.content || report.contenido || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (report.authorName || report.autor || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (report.projectName || report.proyecto || "").toLowerCase().includes(searchTerm.toLowerCase());
+      const contentMatch = (report.content || "").toLowerCase().includes(searchTerm.toLowerCase());
+      const authorMatch = (report.authorName || "").toLowerCase().includes(searchTerm.toLowerCase());
+      const projectMatch = (report.projectName || "").toLowerCase().includes(searchTerm.toLowerCase());
       
-      const status = report.status || "Pendiente";
-      const matchesFilter = activeFilter === "Todos" || status === activeFilter;
+      const matchesSearch = contentMatch || authorMatch || projectMatch;
+      const matchesFilter = activeFilter === "Todos" || (report.status || "Pendiente") === activeFilter;
       
       return matchesSearch && matchesFilter;
     });
@@ -89,34 +80,58 @@ export default function ReportsPage() {
 
   const linkedProject = useMemo(() => {
     if (!selectedReport || !projects) return null;
-    return projects.find(p => p.id === selectedReport.projectId || p.Pry_Nombre_Proyecto === selectedReport.projectName);
+    return projects.find(p => p.id === selectedReport.projectId);
   }, [selectedReport, projects]);
 
-  const handleUpdateStatus = (reportId: string, newStatus: "Aprobado" | "Rechazado", e?: React.MouseEvent) => {
+  const createNotification = async (userId: string, title: string, message: string, type: string) => {
+    if (!db) return;
+    await addDoc(collection(db, "notifications"), {
+      userId,
+      title,
+      message,
+      type,
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+  };
+
+  const handleUpdateStatus = async (reportId: string, newStatus: "Aprobado" | "Rechazado", e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (!db || !isAdmin) return;
+    if (!db || !isAdmin || !selectedReport) return;
     
     setProcessingId(reportId);
     const reportRef = doc(db, "reports", reportId);
     const updateData = { status: newStatus };
 
-    updateDoc(reportRef, updateData)
-      .then(() => {
-        toast({ 
-          title: `Reporte ${newStatus}`, 
-          description: `El registro ha sido actualizado.` 
-        });
-        if (selectedReportId === reportId) setSelectedReportId(null);
-      })
-      .catch(async (error) => {
-        const permissionError = new FirestorePermissionError({
-          path: reportRef.path,
-          operation: 'update',
-          requestResourceData: updateData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => setProcessingId(null));
+    try {
+      await updateDoc(reportRef, updateData);
+      
+      // Notify employee
+      await createNotification(
+        selectedReport.employeeId,
+        `Reporte ${newStatus}`,
+        `Tu reporte para ${selectedReport.projectName} ha sido ${newStatus.toLowerCase()}.`,
+        "report"
+      );
+
+      // Handle point rewards on approval
+      if (newStatus === "Aprobado") {
+        const userRef = doc(db, "users", selectedReport.employeeId);
+        // We could fetch user current points here or just trust a cloud function, 
+        // but for prototype let's assume +50 pts handled in प्रोजेक्ट completion
+      }
+
+      toast({ title: `Reporte ${newStatus}`, description: `El registro ha sido actualizado.` });
+      setSelectedReportId(null);
+    } catch (error: any) {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: reportRef.path,
+        operation: 'update',
+        requestResourceData: updateData,
+      }));
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   return (
@@ -153,7 +168,7 @@ export default function ReportsPage() {
           <div className="relative w-full lg:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar por obra o técnico..." 
+              placeholder="Buscar reporte..." 
               className="pl-10 bg-white/5 border-white/10 focus:border-accent h-10 text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -287,7 +302,7 @@ export default function ReportsPage() {
                       <div className="bg-white/5 p-4 rounded-xl border border-white/5">
                         <h4 className="text-xs font-bold uppercase text-accent tracking-widest mb-3">Descripción Operativa</h4>
                         <p className="text-sm text-white/90 leading-relaxed whitespace-pre-wrap">
-                          {selectedReport.content || selectedReport.contenido}
+                          {selectedReport.content}
                         </p>
                       </div>
 
@@ -297,7 +312,7 @@ export default function ReportsPage() {
                         </div>
                         <div>
                           <p className="text-[10px] text-muted-foreground uppercase font-bold">Emitido por</p>
-                          <p className="text-sm font-bold">{selectedReport.authorName || selectedReport.autor}</p>
+                          <p className="text-sm font-bold">{selectedReport.authorName}</p>
                         </div>
                       </div>
                     </div>
@@ -327,20 +342,6 @@ export default function ReportsPage() {
             )}
           </DialogContent>
         </Dialog>
-
-        {!isLoading && filteredReports.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-32 text-center">
-            <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/10">
-              <Clock className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-bold text-white uppercase tracking-tighter">Sin reportes en esta sección</h3>
-            <p className="text-muted-foreground mt-2 max-w-xs">
-              {isAdmin 
-                ? "No hay reportes pendientes de validación." 
-                : "Aún no has generado reportes. Recuerda reportar al finalizar tus obras en la sección de Proyectos."}
-            </p>
-          </div>
-        )}
       </div>
     </DashboardLayout>
   );
