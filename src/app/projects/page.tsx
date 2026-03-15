@@ -136,25 +136,6 @@ export default function ProjectsPage() {
     addDoc(colRef, data)
       .then(async (docRef) => {
         toast({ title: t.common.success, description: t.projects.create_success });
-        
-        // Enviar notificaciones a los miembros del equipo
-        if (newProject.assignedTeamId !== "no-team") {
-          const assignedTeam = teams?.find(t => t.id === newProject.assignedTeamId);
-          if (assignedTeam?.members && assignedTeam.members.length > 0) {
-            const notifCol = collection(db, "notifications");
-            assignedTeam.members.forEach((memberId: string) => {
-              addDoc(notifCol, {
-                userId: memberId,
-                title: "Nuevo Proyecto Asignado",
-                message: `Has sido asignado al proyecto: ${newProject.Pry_Nombre_Proyecto}`,
-                type: "project",
-                createdAt: new Date().toISOString(),
-                read: false
-              });
-            });
-          }
-        }
-
         setIsCreateDialogOpen(false);
         setNewProject({
           Pry_Nombre_Proyecto: "",

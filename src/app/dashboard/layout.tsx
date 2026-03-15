@@ -5,7 +5,6 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { UserNav } from "@/components/layout/user-nav";
 import { GlobalSearch } from "@/components/layout/global-search";
-import { NotificationCenter } from "@/components/layout/notification-center";
 import { useUser } from "@/firebase";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { ZyraLogo } from "@/components/brand/zyra-logo";
@@ -39,14 +38,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className="text-sm font-black tracking-tighter text-foreground">ZYRA</span>
             </div>
             
-            {/* Nueva Barra de Búsqueda Global */}
+            {/* Barra de Búsqueda Global */}
             <div className="hidden md:block flex-1 max-w-xl">
               <GlobalSearch />
             </div>
           </div>
           
           <div className="flex items-center gap-4">
-            <NotificationCenter />
             <UserNav />
           </div>
         </header>
