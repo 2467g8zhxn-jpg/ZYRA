@@ -2,99 +2,69 @@
 {
   "entities": {
     "User": {
-      "title": "User Profile",
-      "description": "Información de perfil del empleado y datos de gamificación.",
+      "title": "Empleado/Usuario",
+      "description": "Perfil del empleado vinculado a credenciales de usuario y gamificación.",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
-        "nombre": { "type": "string" },
-        "rol": { "type": "string", "enum": ["admin", "employee"] },
-        "nivel": { "type": "number" },
+        "Emp_Nombre": { "type": "string" },
+        "Emp_Correo": { "type": "string", "format": "email" },
+        "Rol_ID": { "type": "number", "description": "1: Admin, 2: Empleado" },
         "puntos": { "type": "number" },
+        "nivel": { "type": "number" },
         "racha": { "type": "number" },
-        "logros": { "type": "array", "items": { "type": "string" } },
-        "projectStatus": {
-          "type": "object",
-          "description": "Estado del checklist por proyecto.",
-          "additionalProperties": {
-            "type": "object",
-            "properties": {
-              "checklist_completado": { "type": "boolean" },
-              "timestamp_inicio": { "type": "string", "format": "date-time" }
-            }
-          }
-        }
+        "projectStatus": { "type": "object" }
       },
-      "required": ["uid", "nombre", "rol"]
+      "required": ["uid", "Emp_Nombre", "Rol_ID"]
     },
     "Project": {
-      "title": "Project Details",
-      "description": "Información general de una obra o proyecto solar.",
+      "title": "Proyecto (PRY)",
+      "description": "Contenedor principal de la actividad operativa.",
       "type": "object",
       "properties": {
-        "nombre": { "type": "string" },
-        "cliente": { "type": "string" },
-        "estado": { "type": "string", "enum": ["ejecucion", "validacion", "finalizado"] },
-        "descripcion": { "type": "string" },
+        "Pry_Nombre_Proyecto": { "type": "string" },
+        "Cl_ID": { "type": "string", "description": "ID del cliente vinculado" },
+        "Srv_ID": { "type": "string", "description": "ID del servicio vinculado" },
+        "Eq_ID": { "type": "string", "description": "ID del equipo asignado" },
+        "Pry_Estado": { "type": "string", "enum": ["Pendiente", "EnProceso", "Finalizado"] },
         "ubicacion": { "type": "string" },
+        "imageUrl": { "type": "string" },
         "progreso": { "type": "number" },
-        "miembros": { "type": "array", "items": { "type": "string" } },
-        "imageUrl": { "type": "string" }
+        "fecha_creacion": { "type": "string", "format": "date-time" }
       },
-      "required": ["nombre", "cliente", "estado"]
+      "required": ["Pry_Nombre_Proyecto", "Cl_ID", "Srv_ID", "Eq_ID", "Pry_Estado"]
     },
-    "ProjectMaterial": {
-      "title": "Assigned Material",
-      "description": "Material asignado a un proyecto para verificación del empleado.",
+    "Client": {
+      "title": "Cliente (CL)",
+      "description": "Registro de clientes y razón social.",
       "type": "object",
       "properties": {
-        "nombre": { "type": "string" },
-        "cantidad_esperada": { "type": "number" },
-        "estado_verificacion": { "type": "boolean" },
-        "nota_faltante": { "type": "string" }
+        "Cl_Nombre": { "type": "string" },
+        "Cl_RazonSocial": { "type": "string" },
+        "Cl_Correo": { "type": "string", "format": "email" },
+        "Cl_Telefono": { "type": "string" }
       }
     },
-    "InventoryHistory": {
-      "title": "Inventory Log",
-      "description": "Registro de salida de materiales a obra.",
+    "Material": {
+      "title": "Material (MAT)",
+      "description": "Catálogo de inventario.",
       "type": "object",
       "properties": {
-        "mensaje": { "type": "string" },
-        "empleadoID": { "type": "string" },
-        "empleadoNombre": { "type": "string" },
-        "proyectoID": { "type": "string" },
-        "fecha": { "type": "string", "format": "date-time" },
-        "detalles_materiales": { "type": "array", "items": { "$ref": "#/entities/ProjectMaterial" } }
+        "Mat_Nombre": { "type": "string" },
+        "Mat_Stock_Disponible": { "type": "number" }
       }
-    },
-    "ProjectChecklist": {
-      "title": "Initial Checklist",
-      "description": "Validación de seguridad y herramientas antes de iniciar la jornada.",
-      "type": "object",
-      "properties": {
-        "epp_completo": { "type": "boolean" },
-        "herramientas_listas": { "type": "boolean" },
-        "seguridad_area": { "type": "boolean" },
-        "foto_evidencia_inicio": { "type": "string" },
-        "empleadoID": { "type": "string" },
-        "fecha": { "type": "string", "format": "date-time" }
-      },
-      "required": ["epp_completo", "herramientas_listas", "seguridad_area", "empleadoID"]
     },
     "Report": {
-      "title": "Operational Report",
-      "description": "Reportes diarios generados por los empleados.",
+      "title": "Reporte (REP)",
+      "description": "Documentación final de actividades.",
       "type": "object",
       "properties": {
-        "fecha": { "type": "string", "format": "date-time" },
-        "empleadoID": { "type": "string" },
-        "contenido": { "type": "string" },
-        "highlights": { "type": "array", "items": { "type": "string" } },
-        "imageUrl": { "type": "string" },
-        "puntosOtorgados": { "type": "number" },
-        "proyectoID": { "type": "string" }
-      },
-      "required": ["fecha", "empleadoID", "contenido"]
+        "Pry_ID": { "type": "string" },
+        "Eq_ID": { "type": "string" },
+        "Rep_Comentarios": { "type": "string" },
+        "Rep_Evidencia_URL": { "type": "string" },
+        "fecha": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "auth": {
@@ -103,27 +73,23 @@
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
-      "description": "Colección de perfiles de usuario."
+      "description": "Perfiles de empleados y gamificación."
     },
     "/proyectos/{projectId}": {
       "schema": "Project",
-      "description": "Documento principal del proyecto."
+      "description": "Proyectos operativos."
     },
-    "/proyectos/{projectId}/checklist_inicial/{checklistId}": {
-      "schema": "ProjectChecklist",
-      "description": "Subcolección de validaciones iniciales por jornada."
+    "/clientes/{clientId}": {
+      "schema": "Client",
+      "description": "Catálogo de clientes."
     },
-    "/proyectos/{projectId}/materiales_asignados/{materialId}": {
-      "schema": "ProjectMaterial",
-      "description": "Materiales asignados por el admin."
+    "/materiales/{materialId}": {
+      "schema": "Material",
+      "description": "Inventario de materiales."
     },
     "/reportes/{reportId}": {
       "schema": "Report",
-      "description": "Colección de reportes operacionales."
-    },
-    "/historial_inventario/{logId}": {
-      "schema": "InventoryHistory",
-      "description": "Log global de movimientos de inventario."
+      "description": "Historial de reportes operativos."
     }
   }
 }
