@@ -241,12 +241,12 @@ export default function TeamPage() {
                       </Select>
                     </div>
                   </div>
-                  <div className="space-y-2 flex flex-col h-full">
+                  <div className="space-y-2 flex flex-col">
                     <Label className="text-xs uppercase font-bold text-muted-foreground">{t.teams.members}</Label>
-                    <ScrollArea className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 h-[200px]">
-                      <div className="space-y-3">
+                    <ScrollArea className="bg-white/5 border border-white/10 rounded-lg p-3 max-h-[220px]">
+                      <div className="divide-y divide-white/5">
                         {employees?.filter(e => e.rol !== 'admin').map(emp => (
-                          <div key={emp.id} className="flex items-center space-x-3">
+                          <div key={emp.id} className="flex items-center space-x-3 py-2.5">
                             <Checkbox id={`emp-${emp.id}`} checked={newTeam.members.includes(emp.id)} onCheckedChange={() => handleToggleMember(emp.id)} />
                             <label htmlFor={`emp-${emp.id}`} className="text-sm font-medium text-white/80 cursor-pointer">{emp.nombre}</label>
                           </div>
@@ -349,12 +349,12 @@ export default function TeamPage() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-2 flex flex-col h-full">
+              <div className="space-y-2 flex flex-col">
                 <Label className="text-xs uppercase font-bold text-muted-foreground">{t.teams.members}</Label>
-                <ScrollArea className="flex-1 bg-white/5 border border-white/10 rounded-lg p-3 h-[200px]">
-                  <div className="space-y-3">
+                <ScrollArea className="bg-white/5 border border-white/10 rounded-lg p-3 max-h-[220px]">
+                  <div className="divide-y divide-white/5">
                     {employees?.filter(e => e.rol !== 'admin').map(emp => (
-                      <div key={emp.id} className="flex items-center space-x-3">
+                      <div key={emp.id} className="flex items-center space-x-3 py-2.5">
                         <Checkbox 
                           id={`edit-emp-${emp.id}`} 
                           checked={editTeamData?.members.includes(emp.id)} 
