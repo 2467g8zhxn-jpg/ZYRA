@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import DashboardLayout from "../dashboard/layout";
 import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { firebaseConfig } from "@/firebase/config";
-import { initializeApp, deleteApp, getApp } from "firebase/app";
+import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { collection, setDoc, doc, serverTimestamp } from "firebase/firestore";
 import { 
@@ -33,7 +33,7 @@ import {
   DialogFooter,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { Users, Plus, Search, Mail, Phone, ShieldCheck, UserCircle, Star, Lock, Eye, EyeOff } from "lucide-react";
+import { Users, Plus, Search, Mail, Phone, ShieldCheck, UserCircle, Star, Lock, Key, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
@@ -46,17 +46,15 @@ export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  
+  // States for showing generated credentials
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [generatedCreds, setGeneratedCreds] = useState({ email: "", password: "" });
 
   const [newEmployee, setNewEmployee] = useState({
     Emp_Nombre: "",
-    Emp_Correo: "",
+    Emp_CorreoPersonal: "",
     Emp_Telefono: "",
-    Emp_Password: "",
-    rol: 'employee',
-    puntos: 0,
-    nivel: 1,
-    racha: 0
   });
 
   const employeesQuery = useMemoFirebase(() => {
@@ -70,7 +68,7 @@ export default function EmployeesPage() {
     if (!employees) return [];
     return employees.filter(e => 
       (e.Emp_Nombre || e.nombre)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (e.Emp_Correo || e.email)?.toLowerCase().includes(searchTerm.toLowerCase())
+      (e.emailAcceso || e.email)?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [employees, searchTerm]);
 
@@ -78,27 +76,34 @@ export default function EmployeesPage() {
     if (!db) return;
     setLoading(true);
     
-    // Usamos una app secundaria para no desloguear al admin actual
+    // 1. Generar credenciales automáticamente
+    const baseId = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const cleanName = newEmployee.Emp_Nombre.toLowerCase().split(' ')[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const generatedEmail = `${cleanName}.${baseId}@zyracommand.com`;
+    const generatedPassword = Math.random().toString(36).slice(-8) + "!";
+
     let secondaryApp;
     try {
       secondaryApp = initializeApp(firebaseConfig, "secondary-registration");
       const secondaryAuth = getAuth(secondaryApp);
       
-      // 1. Crear usuario en Auth
+      // 2. Crear usuario en Auth con el correo generado por el sistema
       const userCredential = await createUserWithEmailAndPassword(
         secondaryAuth, 
-        newEmployee.Emp_Correo, 
-        newEmployee.Emp_Password
+        generatedEmail, 
+        generatedPassword
       );
       
       const uid = userCredential.user.uid;
 
-      // 2. Crear perfil en Firestore (usando el db del provider principal)
+      // 3. Crear perfil en Firestore
       const userRef = doc(db, "users", uid);
       await setDoc(userRef, {
         uid: uid,
         nombre: newEmployee.Emp_Nombre,
-        email: newEmployee.Emp_Correo,
+        emailPersonal: newEmployee.Emp_CorreoPersonal,
+        emailAcceso: generatedEmail, // Este es el correo con el que iniciará sesión
+        email: generatedEmail, // Backwards compatibility with standard email field
         telefono: newEmployee.Emp_Telefono,
         rol: "employee",
         nivel: 1,
@@ -108,21 +113,19 @@ export default function EmployeesPage() {
         createdAt: serverTimestamp(),
       });
 
+      // Guardar credenciales para mostrar al administrador
+      setGeneratedCreds({ email: generatedEmail, password: generatedPassword });
+      setShowCredentials(true);
+      
       toast({ 
-        title: "Empleado Registrado", 
-        description: `Acceso habilitado para ${newEmployee.Emp_Nombre}.` 
+        title: "Registro Exitoso", 
+        description: `Se han generado las credenciales para ${newEmployee.Emp_Nombre}.` 
       });
 
-      setIsCreateDialogOpen(false);
       setNewEmployee({
         Emp_Nombre: "",
-        Emp_Correo: "",
+        Emp_CorreoPersonal: "",
         Emp_Telefono: "",
-        Emp_Password: "",
-        rol: 'employee',
-        puntos: 0,
-        nivel: 1,
-        racha: 0
       });
     } catch (e: any) {
       console.error(e);
@@ -137,6 +140,11 @@ export default function EmployeesPage() {
       }
       setLoading(false);
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ description: "Copiado al portapapeles" });
   };
 
   if (!isAdmin) {
@@ -163,86 +171,144 @@ export default function EmployeesPage() {
             <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
               <UserCircle className="h-8 w-8 text-accent" /> Empleados (EMP)
             </h2>
-            <p className="text-muted-foreground">Gestión de capital humano, roles y niveles de acceso.</p>
+            <p className="text-muted-foreground">Gestión de capital humano y generación de accesos automáticos.</p>
           </div>
           
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) {
+              setShowCredentials(false);
+            }
+          }}>
             <DialogTrigger asChild>
               <Button className="bg-accent hover:bg-accent/90 text-white font-bold gap-2">
                 <Plus className="h-4 w-4" /> Registrar Empleado
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-card border-white/10 text-white sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle className="text-accent">Nuevo Perfil y Acceso</DialogTitle>
-                <CardDescription>
-                  Configure las credenciales de inicio de sesión para el nuevo integrante (EMP).
-                </CardDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-xs uppercase font-bold text-muted-foreground">Nombre Completo</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Ej: Juan Antonio Pérez" 
-                    className="bg-white/5 border-white/10"
-                    value={newEmployee.Emp_Nombre}
-                    onChange={(e) => setNewEmployee({...newEmployee, Emp_Nombre: e.target.value})}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase font-bold text-muted-foreground">E-mail de Acceso</Label>
-                    <Input 
-                      type="email"
-                      placeholder="j.perez@zyra.com" 
-                      className="bg-white/5 border-white/10"
-                      value={newEmployee.Emp_Correo}
-                      onChange={(e) => setNewEmployee({...newEmployee, Emp_Correo: e.target.value})}
-                    />
+              {!showCredentials ? (
+                <>
+                  <DialogHeader>
+                    <DialogTitle className="text-accent">Nuevo Registro Operativo</DialogTitle>
+                    <CardDescription>
+                      Ingrese los datos básicos. El sistema generará automáticamente un correo y contraseña de acceso único.
+                    </CardDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-xs uppercase font-bold text-muted-foreground">Nombre Completo</Label>
+                      <Input 
+                        id="name" 
+                        placeholder="Ej: Juan Antonio Pérez" 
+                        className="bg-white/5 border-white/10"
+                        value={newEmployee.Emp_Nombre}
+                        onChange={(e) => setNewEmployee({...newEmployee, Emp_Nombre: e.target.value})}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase font-bold text-muted-foreground">E-mail Personal</Label>
+                        <Input 
+                          type="email"
+                          placeholder="personal@gmail.com" 
+                          className="bg-white/5 border-white/10"
+                          value={newEmployee.Emp_CorreoPersonal}
+                          onChange={(e) => setNewEmployee({...newEmployee, Emp_CorreoPersonal: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase font-bold text-muted-foreground">Teléfono</Label>
+                        <Input 
+                          placeholder="+56 9..." 
+                          className="bg-white/5 border-white/10"
+                          value={newEmployee.Emp_Telefono}
+                          onChange={(e) => setNewEmployee({...newEmployee, Emp_Telefono: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-lg bg-accent/10 border border-accent/20">
+                      <p className="text-xs text-accent leading-relaxed flex items-start gap-2">
+                        <Key className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span>Al guardar, se generará un correo <b>@zyracommand.com</b> y una clave segura para este empleado.</span>
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase font-bold text-muted-foreground">Teléfono</Label>
-                    <Input 
-                      placeholder="+56 9..." 
-                      className="bg-white/5 border-white/10"
-                      value={newEmployee.Emp_Telefono}
-                      onChange={(e) => setNewEmployee({...newEmployee, Emp_Telefono: e.target.value})}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2 relative">
-                  <Label className="text-xs uppercase font-bold text-muted-foreground">Contraseña Provisional</Label>
-                  <div className="relative">
-                    <Input 
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Mínimo 6 caracteres" 
-                      className="bg-white/5 border-white/10 pr-10"
-                      value={newEmployee.Emp_Password}
-                      onChange={(e) => setNewEmployee({...newEmployee, Emp_Password: e.target.value})}
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
+                  <DialogFooter>
+                    <Button 
+                      className="bg-accent hover:bg-accent/90 text-white w-full h-12 text-lg font-bold"
+                      disabled={!newEmployee.Emp_Nombre || !newEmployee.Emp_CorreoPersonal || loading}
+                      onClick={handleCreateEmployee}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                      {loading ? "Generando Acceso..." : "Guardar Empleado y Generar Acceso"}
+                    </Button>
+                  </DialogFooter>
+                </>
+              ) : (
+                <>
+                  <DialogHeader>
+                    <DialogTitle className="text-emerald-500 flex items-center gap-2">
+                      <ShieldCheck className="h-6 w-6" /> Registro Completado
+                    </DialogTitle>
+                    <CardDescription>
+                      Las siguientes credenciales han sido generadas. Por favor, entréguelas al empleado para su primer inicio de sesión.
+                    </CardDescription>
+                  </DialogHeader>
+                  <div className="py-6 space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">E-mail de Acceso ZYRA</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          readOnly 
+                          value={generatedCreds.email} 
+                          className="bg-white/5 border-white/10 font-mono text-sm"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="border-white/10 hover:bg-accent/10"
+                          onClick={() => copyToClipboard(generatedCreds.email)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Contraseña Provisional</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          readOnly 
+                          value={generatedCreds.password} 
+                          className="bg-white/5 border-white/10 font-mono text-sm text-accent"
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="border-white/10 hover:bg-accent/10"
+                          onClick={() => copyToClipboard(generatedCreds.password)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-md">
+                      <p className="text-[10px] text-yellow-500 uppercase font-bold tracking-tighter flex items-center gap-2">
+                        <Lock className="h-3 w-3" /> Importante: Por seguridad, esta contraseña no se volverá a mostrar.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground italic flex items-center gap-1 mt-1">
-                    <Lock className="h-3 w-3" /> El empleado podrá cambiarla después de su primer acceso.
-                  </p>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button 
-                  className="bg-accent hover:bg-accent/90 text-white w-full h-12 text-lg font-bold"
-                  disabled={!newEmployee.Emp_Nombre || !newEmployee.Emp_Correo || newEmployee.Emp_Password.length < 6 || loading}
-                  onClick={handleCreateEmployee}
-                >
-                  {loading ? "Generando Acceso..." : "Guardar Empleado y Credenciales"}
-                </Button>
-              </DialogFooter>
+                  <DialogFooter>
+                    <Button 
+                      className="bg-white text-black hover:bg-white/90 w-full font-bold"
+                      onClick={() => {
+                        setIsCreateDialogOpen(false);
+                        setShowCredentials(false);
+                      }}
+                    >
+                      Entendido, Cerrar
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
             </DialogContent>
           </Dialog>
         </div>
@@ -254,7 +320,7 @@ export default function EmployeesPage() {
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Buscar por nombre o correo..." 
+                  placeholder="Buscar por nombre o acceso..." 
                   className="pl-10 bg-white/5 border-white/5 text-xs h-9"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -272,7 +338,7 @@ export default function EmployeesPage() {
                 <TableHeader className="bg-white/5">
                   <TableRow className="border-white/5 hover:bg-transparent">
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">Empleado</TableHead>
-                    <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">Contacto</TableHead>
+                    <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">Acceso Sistema</TableHead>
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">Rol</TableHead>
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">Nivel / Puntos</TableHead>
                     <TableHead className="text-right text-muted-foreground uppercase text-[10px] font-bold">Acciones</TableHead>
@@ -295,10 +361,10 @@ export default function EmployeesPage() {
                       <TableCell>
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-xs text-white">
-                            <Mail className="h-3 w-3 text-accent" /> {emp.Emp_Correo || emp.email || "N/A"}
+                            <Mail className="h-3 w-3 text-accent" /> {emp.emailAcceso || emp.email || "N/A"}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Phone className="h-3 w-3 text-muted-foreground" /> {emp.Emp_Telefono || emp.telefono || "Sin registro"}
+                            <Mail className="h-3 w-3 text-muted-foreground opacity-50" /> <span className="italic">{emp.emailPersonal || "Sin correo personal"}</span>
                           </div>
                         </div>
                       </TableCell>
