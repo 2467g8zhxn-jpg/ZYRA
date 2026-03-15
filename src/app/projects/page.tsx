@@ -45,19 +45,6 @@ import {
 } from "@/components/ui/dialog";
 import { aiReportDraftingAssistant } from "@/ai/flows/ai-report-drafting-assistant-flow";
 
-const FALLBACK_PROJECTS = [
-  {
-    id: "demo-1",
-    Pry_Nombre_Proyecto: "Residencial Las Palmas",
-    Cl_ID: "Inmobiliaria El Sol",
-    Pry_Estado: "EnProceso",
-    ubicacion: "Av. Las Palmas 450, Santiago",
-    progreso: 65,
-    Eq_ID: "Equipo Alpha",
-    imageUrl: "https://picsum.photos/seed/solar-pan/800/450",
-  }
-];
-
 export default function ProjectsPage() {
   const { profile, user, isUserLoading } = useUser();
   const db = useFirestore();
@@ -87,16 +74,35 @@ export default function ProjectsPage() {
     seguridad_area: false
   });
 
+  // 1. First, fetch teams where the user is a member
+  const userTeamsQuery = useMemoFirebase(() => {
+    if (!db || !user || isAdmin) return null;
+    return query(collection(db, "teams"), where("members", "array-contains", user.uid));
+  }, [db, user, isAdmin]);
+
+  const { data: myTeams } = useCollection(userTeamsQuery);
+
+  // 2. Then, fetch projects assigned to those teams (or all if admin)
   const projectsQuery = useMemoFirebase(() => {
     if (!db || !profile) return null;
     if (isAdmin) {
       return collection(db, "proyectos");
     }
-    if (profile.teamId) {
-      return query(collection(db, "proyectos"), where("assignedTeamId", "==", profile.teamId));
+    
+    // For employees: filter projects assigned to any of their teams
+    if (myTeams && myTeams.length > 0) {
+      const teamIds = myTeams.map(t => t.id);
+      return query(collection(db, "proyectos"), where("assignedTeamId", "in", teamIds));
     }
+    
+    // If no teams found for employee, we return a query that will return nothing
+    // instead of returning null (which would show the fallback/loading)
+    if (myTeams && myTeams.length === 0) {
+      return query(collection(db, "proyectos"), where("assignedTeamId", "==", "no-team-found"));
+    }
+
     return null;
-  }, [db, isAdmin, profile]);
+  }, [db, isAdmin, profile, myTeams]);
 
   const teamsQuery = useMemoFirebase(() => {
     if (!db || !isAdmin) return null;
@@ -107,8 +113,8 @@ export default function ProjectsPage() {
   const { data: teams } = useCollection(teamsQuery);
 
   const displayProjects = useMemo(() => {
-    return (firestoreProjects && firestoreProjects.length > 0) ? firestoreProjects : (isAdmin ? [] : FALLBACK_PROJECTS);
-  }, [firestoreProjects, isAdmin]);
+    return firestoreProjects || [];
+  }, [firestoreProjects]);
 
   const handleCreateProject = async () => {
     if (!db) return;
@@ -179,7 +185,7 @@ export default function ProjectsPage() {
         content: reportContent,
         authorName: profile.nombre || "Técnico Zyra",
         employeeId: user.uid,
-        assignedTeamId: profile.teamId || "sin-equipo",
+        assignedTeamId: project.assignedTeamId || "sin-equipo",
         status: "Pendiente",
         timestamp: new Date().toISOString(),
         createdAt: serverTimestamp(),
@@ -331,155 +337,176 @@ export default function ProjectsPage() {
           )}
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {displayProjects.map((project: any) => {
-            const isEnCurso = profile?.projectStatus?.[project.id]?.en_curso;
-            const statusColor = project.Pry_Estado === 'EnProceso' ? 'bg-emerald-500' : project.Pry_Estado === 'Finalizado' ? 'bg-primary' : 'bg-yellow-500';
+        {displayProjects.length > 0 ? (
+          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {displayProjects.map((project: any) => {
+              const isEnCurso = profile?.projectStatus?.[project.id]?.en_curso;
+              const statusColor = project.Pry_Estado === 'EnProceso' ? 'bg-emerald-500' : project.Pry_Estado === 'Finalizado' ? 'bg-primary' : 'bg-yellow-500';
 
-            return (
-              <Card key={project.id} className="bg-card border-white/10 hover:border-accent/30 transition-all group overflow-hidden flex flex-col h-full shadow-lg">
-                <div className="relative h-48 w-full overflow-hidden">
-                  <Image
-                    src={project.imageUrl || "https://picsum.photos/seed/solar-pan/800/450"}
-                    alt={project.Pry_Nombre_Proyecto}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                  <div className="absolute bottom-3 left-3 flex gap-2">
-                    <Badge className={cn("font-bold px-2 py-0.5 text-[10px] text-white", statusColor)}>
-                      {(project.Pry_Estado || 'PENDIENTE').toUpperCase()}
-                    </Badge>
-                  </div>
-                </div>
-                
-                <CardHeader className="pb-3 pt-4">
-                  <CardTitle className="text-lg font-bold text-white group-hover:text-accent transition-colors">
-                    {project.Pry_Nombre_Proyecto}
-                  </CardTitle>
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{project.Cl_ID}</p>
-                </CardHeader>
-
-                <CardContent className="space-y-4 flex-1">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3 text-accent shrink-0" />
-                    <span className="truncate">{project.ubicacion}</span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold uppercase">
-                      <span className="flex items-center gap-1"><Activity className="h-3 w-3 text-accent" /> Avance</span>
-                      <span className="text-white">{project.progreso || 0}%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-primary" style={{ width: `${project.progreso || 0}%` }} />
+              return (
+                <Card key={project.id} className="bg-card border-white/10 hover:border-accent/30 transition-all group overflow-hidden flex flex-col h-full shadow-lg">
+                  <div className="relative h-48 w-full overflow-hidden">
+                    <Image
+                      src={project.imageUrl || "https://picsum.photos/seed/solar-pan/800/450"}
+                      alt={project.Pry_Nombre_Proyecto}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-3 left-3 flex gap-2">
+                      <Badge className={cn("font-bold px-2 py-0.5 text-[10px] text-white", statusColor)}>
+                        {(project.Pry_Estado || 'PENDIENTE').toUpperCase()}
+                      </Badge>
                     </div>
                   </div>
-                </CardContent>
+                  
+                  <CardHeader className="pb-3 pt-4">
+                    <CardTitle className="text-lg font-bold text-white group-hover:text-accent transition-colors">
+                      {project.Pry_Nombre_Proyecto}
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{project.Cl_ID}</p>
+                  </CardHeader>
 
-                <CardFooter className="pt-4 border-t border-white/5 mt-auto">
-                  {isAdmin ? (
-                    <div className="flex w-full gap-2">
-                      <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold border-white/10 hover:bg-accent/10">EQUIPO</Button>
-                      <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold border-white/10 hover:bg-primary/10">REPORTES</Button>
+                  <CardContent className="space-y-4 flex-1">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3 text-accent shrink-0" />
+                      <span className="truncate">{project.ubicacion}</span>
                     </div>
-                  ) : (
-                    <Sheet onOpenChange={(open) => {
-                      setIsSheetOpen(open);
-                      if (!open) setReportContent("");
-                    }}>
-                      <SheetTrigger asChild>
-                        <button className={cn(
-                          "flex items-center gap-2 text-xs font-bold group-hover:translate-x-1 transition-transform uppercase tracking-widest w-full justify-between",
-                          isEnCurso ? "text-emerald-500" : "text-accent"
-                        )}>
-                          {isEnCurso ? "Finalizar y Reportar" : "Iniciar Jornada"} <ArrowRight className="h-3 w-3" />
-                        </button>
-                      </SheetTrigger>
-                      <SheetContent className="bg-card border-white/10 text-white sm:max-w-md w-full overflow-y-auto">
-                        <SheetHeader className="mb-6">
-                          <SheetTitle className="text-accent text-2xl font-bold">{project.Pry_Nombre_Proyecto}</SheetTitle>
-                          <SheetDescription className="text-muted-foreground">
-                            {isEnCurso ? "Completa el reporte diario para finalizar tu jornada." : "Protocolo de verificación de seguridad y materiales."}
-                          </SheetDescription>
-                        </SheetHeader>
-                        
-                        <div className="space-y-8">
-                          {!isEnCurso ? (
-                            <>
-                              <div className="bg-white/5 border border-white/10 p-5 rounded-xl space-y-4">
-                                <h4 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-tighter">
-                                  <ShieldCheck className="h-5 w-5 text-[#8A2BE2]" /> Protocolo de Seguridad
-                                </h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold uppercase">
+                        <span className="flex items-center gap-1"><Activity className="h-3 w-3 text-accent" /> Avance</span>
+                        <span className="text-white">{project.progreso || 0}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary" style={{ width: `${project.progreso || 0}%` }} />
+                      </div>
+                    </div>
+                  </CardContent>
+
+                  <CardFooter className="pt-4 border-t border-white/5 mt-auto">
+                    {isAdmin ? (
+                      <div className="flex w-full gap-2">
+                        <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold border-white/10 hover:bg-accent/10">EQUIPO</Button>
+                        <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold border-white/10 hover:bg-primary/10">REPORTES</Button>
+                      </div>
+                    ) : (
+                      <Sheet open={isSheetOpen && selectedProject?.id === project.id} onOpenChange={(open) => {
+                        setIsSheetOpen(open);
+                        if (open) setSelectedProject(project);
+                        if (!open) setReportContent("");
+                      }}>
+                        <SheetTrigger asChild>
+                          <button className={cn(
+                            "flex items-center gap-2 text-xs font-bold group-hover:translate-x-1 transition-transform uppercase tracking-widest w-full justify-between",
+                            isEnCurso ? "text-emerald-500" : "text-accent"
+                          )}>
+                            {isEnCurso ? "Finalizar y Reportar" : "Iniciar Jornada"} <ArrowRight className="h-3 w-3" />
+                          </button>
+                        </SheetTrigger>
+                        <SheetContent className="bg-card border-white/10 text-white sm:max-w-md w-full overflow-y-auto">
+                          <SheetHeader className="mb-6">
+                            <SheetTitle className="text-accent text-2xl font-bold">{project.Pry_Nombre_Proyecto}</SheetTitle>
+                            <SheetDescription className="text-muted-foreground">
+                              {isEnCurso ? "Completa el reporte diario para finalizar tu jornada." : "Protocolo de verificación de seguridad y materiales."}
+                            </SheetDescription>
+                          </SheetHeader>
+                          
+                          <div className="space-y-8">
+                            {!isEnCurso ? (
+                              <>
+                                <div className="bg-white/5 border border-white/10 p-5 rounded-xl space-y-4">
+                                  <h4 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-tighter">
+                                    <ShieldCheck className="h-5 w-5 text-[#8A2BE2]" /> Protocolo de Seguridad
+                                  </h4>
+                                  <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-xs font-semibold">EPP Completo</p>
+                                      <Switch checked={checklist.epp_completo} onCheckedChange={(v) => setChecklist({...checklist, epp_completo: v})} />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-xs font-semibold">Área Segura</p>
+                                      <Switch checked={checklist.seguridad_area} onCheckedChange={(v) => setChecklist({...checklist, seguridad_area: v})} />
+                                    </div>
+                                  </div>
+                                </div>
+                                <Button 
+                                  className="w-full bg-[#8A2BE2] hover:bg-[#8A2BE2]/90 text-white font-bold h-12"
+                                  disabled={!checklist.epp_completo || !checklist.seguridad_area || loading}
+                                  onClick={() => handleStartDay(project)}
+                                >
+                                  {loading ? "Validando..." : "INICIAR JORNADA"}
+                                </Button>
+                              </>
+                            ) : (
+                              <div className="space-y-6">
                                 <div className="space-y-4">
                                   <div className="flex items-center justify-between">
-                                    <p className="text-xs font-semibold">EPP Completo</p>
-                                    <Switch checked={checklist.epp_completo} onCheckedChange={(v) => setChecklist({...checklist, epp_completo: v})} />
+                                    <Label className="text-xs font-bold uppercase text-muted-foreground">Descripción de Tareas</Label>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-7 text-[10px] text-accent font-bold gap-1 hover:bg-accent/10"
+                                      onClick={() => handleAiDraft(project.Pry_Nombre_Proyecto)}
+                                      disabled={isAiDrafting}
+                                    >
+                                      {isAiDrafting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                      ASISTENTE AI
+                                    </Button>
                                   </div>
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-xs font-semibold">Área Segura</p>
-                                    <Switch checked={checklist.seguridad_area} onCheckedChange={(v) => setChecklist({...checklist, seguridad_area: v})} />
-                                  </div>
-                                </div>
-                              </div>
-                              <Button 
-                                className="w-full bg-[#8A2BE2] hover:bg-[#8A2BE2]/90 text-white font-bold h-12"
-                                disabled={!checklist.epp_completo || !checklist.seguridad_area || loading}
-                                onClick={() => handleStartDay(project)}
-                              >
-                                {loading ? "Validando..." : "INICIAR JORNADA"}
-                              </Button>
-                            </>
-                          ) : (
-                            <div className="space-y-6">
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <Label className="text-xs font-bold uppercase text-muted-foreground">Descripción de Tareas</Label>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-7 text-[10px] text-accent font-bold gap-1 hover:bg-accent/10"
-                                    onClick={() => handleAiDraft(project.Pry_Nombre_Proyecto)}
-                                    disabled={isAiDrafting}
-                                  >
-                                    {isAiDrafting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                                    ASISTENTE AI
-                                  </Button>
-                                </div>
-                                <Textarea 
-                                  placeholder="Escribe tus notas del día aquí..." 
-                                  className="bg-white/5 border-white/10 min-h-[150px] text-sm"
-                                  value={reportContent}
-                                  onChange={(e) => setReportContent(e.target.value)}
-                                />
-                                
-                                <div className="space-y-2">
-                                  <Label className="text-xs font-bold uppercase text-muted-foreground">Evidencia Fotográfica</Label>
-                                  <div className="aspect-video w-full rounded-lg bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent/40 transition-colors cursor-pointer">
-                                    <Camera className="h-8 w-8" />
-                                    <span className="text-xs">Subir evidencia de obra</span>
+                                  <Textarea 
+                                    placeholder="Escribe tus notas del día aquí..." 
+                                    className="bg-white/5 border-white/10 min-h-[150px] text-sm"
+                                    value={reportContent}
+                                    onChange={(e) => setReportContent(e.target.value)}
+                                  />
+                                  
+                                  <div className="space-y-2">
+                                    <Label className="text-xs font-bold uppercase text-muted-foreground">Evidencia Fotográfica</Label>
+                                    <div className="aspect-video w-full rounded-lg bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent/40 transition-colors cursor-pointer">
+                                      <Camera className="h-8 w-8" />
+                                      <span className="text-xs">Subir evidencia de obra</span>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
 
-                              <Button 
-                                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12"
-                                disabled={!reportContent || loading}
-                                onClick={() => handleFinishDayAndReport(project)}
-                              >
-                                {loading ? "Procesando..." : "FINALIZAR Y ENVIAR REPORTE"}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </SheetContent>
-                    </Sheet>
-                  )}
-                </CardFooter>
-              </Card>
-            );
-          })}
-        </div>
+                                <Button 
+                                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12"
+                                  disabled={!reportContent || loading}
+                                  onClick={() => handleFinishDayAndReport(project)}
+                                >
+                                  {loading ? "Procesando..." : "FINALIZAR Y ENVIAR REPORTE"}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </SheetContent>
+                      </Sheet>
+                    )}
+                  </CardFooter>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+            <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+              <Briefcase className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-bold text-white uppercase tracking-tighter">Sin proyectos asignados</h3>
+            <p className="text-sm text-muted-foreground mt-2 max-w-xs">
+              {isAdmin 
+                ? "Aún no has creado ningún frente de trabajo operativo." 
+                : "No tienes proyectos vinculados a tus equipos de trabajo actuales."}
+            </p>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
+}
+
+// Helper to keep track of selected project in sheet
+function useProjectState() {
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  return { selectedProject, setSelectedProject };
 }
