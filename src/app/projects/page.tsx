@@ -80,7 +80,13 @@ export default function ProjectsPage() {
     return collection(db, "proyectos");
   }, [db]);
 
+  const teamsQuery = useMemoFirebase(() => {
+    if (!db) return null;
+    return collection(db, "teams");
+  }, [db]);
+
   const { data: firestoreProjects, isLoading: projectsLoading } = useCollection(projectsQuery);
+  const { data: teams } = useCollection(teamsQuery);
 
   const displayProjects = useMemo(() => {
     const baseProjects = (firestoreProjects && firestoreProjects.length > 0) ? firestoreProjects : FALLBACK_PROJECTS;
@@ -209,9 +215,12 @@ export default function ProjectsPage() {
                           <SelectValue placeholder="Asignar" />
                         </SelectTrigger>
                         <SelectContent className="bg-card border-white/10 text-white">
-                          <SelectItem value="eq-1">Equipo Alpha</SelectItem>
-                          <SelectItem value="eq-2">Equipo Gamma</SelectItem>
-                          <SelectItem value="eq-3">Mantenimiento Norte</SelectItem>
+                          {teams?.map((team) => (
+                            <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                          ))}
+                          {(!teams || teams.length === 0) && (
+                            <SelectItem value="none" disabled>No hay equipos creados</SelectItem>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
