@@ -1,4 +1,3 @@
-
 "use client";
 
 import DashboardLayout from "../dashboard/layout";
@@ -367,8 +366,8 @@ export default function ProjectsPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Instalación">Instalación Fotovoltaica</SelectItem>
-                          <SelectItem value="Mantenimiento">Mantenimiento Preventivo</SelectItem>
+                          <SelectItem value="Instalación">Instalación</SelectItem>
+                          <SelectItem value="Mantenimiento">Mantenimiento</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

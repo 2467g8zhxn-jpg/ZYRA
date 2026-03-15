@@ -113,8 +113,8 @@ export const translations = {
       team_type: "Tipo de Equipo",
       leader: "Líder del Equipo",
       members: "Integrantes",
-      installation: "Instalación Fotovoltaica",
-      maintenance: "Mantenimiento Preventivo",
+      installation: "Instalación",
+      maintenance: "Mantenimiento",
       manage_leader: "Gestionar Líder"
     },
     employees: {
@@ -154,7 +154,7 @@ export const translations = {
       stock: "Stock Disponible",
       critical: "CRÍTICO",
       optimal: "ÓPTIMO",
-      template_install: "Plantilla: Instalación Solar",
+      template_install: "Plantilla: Instalación",
       template_maint: "Plantilla: Mantenimiento",
       edit_chs: "EDITAR CONFIGURACIÓN (CHS)"
     },
@@ -299,8 +299,8 @@ export const translations = {
       team_type: "Team Type",
       leader: "Team Leader",
       members: "Members",
-      installation: "Photovoltaic Installation",
-      maintenance: "Preventive Maintenance",
+      installation: "Installation",
+      maintenance: "Maintenance",
       manage_leader: "Manage Leader"
     },
     employees: {
@@ -340,7 +340,7 @@ export const translations = {
       stock: "Stock Available",
       critical: "CRITICAL",
       optimal: "OPTIMAL",
-      template_install: "Template: Solar Installation",
+      template_install: "Template: Installation",
       template_maint: "Template: Maintenance",
       edit_chs: "EDIT CONFIG (CHS)"
     },
@@ -485,8 +485,8 @@ export const translations = {
       team_type: "团队类型",
       leader: "团队负责人",
       members: "成员",
-      installation: "光伏安装",
-      maintenance: "预防性维护",
+      installation: "安装",
+      maintenance: "维护",
       manage_leader: "管理负责人"
     },
     employees: {
@@ -526,7 +526,7 @@ export const translations = {
       stock: "可用库存",
       critical: "极低",
       optimal: "正常",
-      template_install: "模板：光伏安装",
+      template_install: "模板：安装",
       template_maint: "模板：维护",
       edit_chs: "编辑配置 (CHS)"
     },
