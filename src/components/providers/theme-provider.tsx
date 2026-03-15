@@ -9,6 +9,7 @@ interface ThemeContextType {
   setThemeColor: (val: string) => void;
   fontSize: number;
   setFontSize: (val: number) => void;
+  persistTheme: (settings: { darkMode: boolean; themeColor: string; fontSize: number }) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -19,7 +20,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [fontSize, setFontSize] = useState(14);
   const [mounted, setMounted] = useState(false);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount only
   useEffect(() => {
     const saved = localStorage.getItem('zyra-settings');
     if (saved) {
@@ -38,7 +39,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Apply theme classes and variables
+  // Apply theme classes and variables but DO NOT save to localStorage here
   useEffect(() => {
     if (!mounted) return;
 
@@ -50,17 +51,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     
     document.documentElement.setAttribute('data-theme', themeColor);
     document.documentElement.style.setProperty('--base-font-size', `${fontSize}px`);
-    
-    // Save to localStorage whenever they change
-    localStorage.setItem('zyra-settings', JSON.stringify({ 
-      darkMode, 
-      themeColor, 
-      fontSize: [fontSize] 
-    }));
   }, [darkMode, themeColor, fontSize, mounted]);
 
+  const persistTheme = (settings: { darkMode: boolean; themeColor: string; fontSize: number }) => {
+    localStorage.setItem('zyra-settings', JSON.stringify({ 
+      darkMode: settings.darkMode, 
+      themeColor: settings.themeColor, 
+      fontSize: [settings.fontSize] 
+    }));
+  };
+
   return (
-    <ThemeContext.Provider value={{ darkMode, setDarkMode, themeColor, setThemeColor, fontSize, setFontSize }}>
+    <ThemeContext.Provider value={{ darkMode, setDarkMode, themeColor, setThemeColor, fontSize, setFontSize, persistTheme }}>
       {children}
     </ThemeContext.Provider>
   );

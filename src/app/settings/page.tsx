@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../dashboard/layout";
 import { 
   Card, 
@@ -23,28 +23,69 @@ import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Moon, Sun, Languages, Type, Palette, Save, Globe } from "lucide-react";
+import { Settings, Moon, Sun, Languages, Type, Palette, Save, Globe, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/providers/i18n-provider";
 import { useTheme } from "@/components/providers/theme-provider";
 import { Language } from "@/app/lib/i18n";
+import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { toast } = useToast();
-  const { language, setLanguage, t } = useI18n();
-  const { darkMode, setDarkMode, themeColor, setThemeColor, fontSize, setFontSize } = useTheme();
+  const { language, setLanguage, persistLanguage, t } = useI18n();
+  const { darkMode, setDarkMode, themeColor, setThemeColor, fontSize, setFontSize, persistTheme } = useTheme();
+  
   const [loading, setLoading] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+
+  // Store initial values to revert if not saved
+  const initialSettings = useRef({
+    darkMode,
+    themeColor,
+    fontSize,
+    language
+  });
+
+  // Revert changes if navigating away without saving
+  useEffect(() => {
+    return () => {
+      if (!isSaved) {
+        setDarkMode(initialSettings.current.darkMode);
+        setThemeColor(initialSettings.current.themeColor);
+        setFontSize(initialSettings.current.fontSize);
+        setLanguage(initialSettings.current.language);
+      }
+    };
+  }, [isSaved, setDarkMode, setThemeColor, setFontSize, setLanguage]);
 
   const handleSaveSettings = () => {
     setLoading(true);
+    // Persist to localStorage
+    persistTheme({ darkMode, themeColor, fontSize });
+    persistLanguage(language);
+    
+    // Update reference for future reverts
+    initialSettings.current = { darkMode, themeColor, fontSize, language };
+    
     setTimeout(() => {
       setLoading(false);
+      setIsSaved(true);
       toast({
         title: t.common.success,
         description: t.settings.acc_title + " " + t.common.success,
       });
     }, 800);
+  };
+
+  const handleCancel = () => {
+    setDarkMode(initialSettings.current.darkMode);
+    setThemeColor(initialSettings.current.themeColor);
+    setFontSize(initialSettings.current.fontSize);
+    setLanguage(initialSettings.current.language);
+    setIsSaved(true); // Flag to prevent useEffect revert
+    router.back();
   };
 
   return (
@@ -64,14 +105,14 @@ export default function SettingsPage() {
             </TabsTrigger>
             <TabsTrigger value="language" className="data-[state=active]:bg-accent data-[state=active]:text-white gap-2 text-xs">
               <Globe className="h-4 w-4" /> {t.settings.language}
-            </TabsTrigger>
+            </Globe>
             <TabsTrigger value="accessibility" className="data-[state=active]:bg-accent data-[state=active]:text-white gap-2 text-xs">
               <Type className="h-4 w-4" /> {t.settings.accessibility}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="appearance">
-            <Card>
+            <Card className="border-border">
               <CardHeader>
                 <CardTitle className="text-foreground text-lg flex items-center gap-2">
                   <Palette className="h-5 w-5 text-accent" /> {t.settings.viz_title}
@@ -79,7 +120,7 @@ export default function SettingsPage() {
                 <CardDescription>{t.settings.viz_desc}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
                   <div className="space-y-0.5">
                     <Label className="text-sm font-bold text-foreground">{t.settings.dark_mode}</Label>
                     <p className="text-xs text-muted-foreground">{t.settings.dark_mode_desc}</p>
@@ -113,7 +154,7 @@ export default function SettingsPage() {
                           htmlFor={theme.id}
                           className={cn(
                             "flex flex-col items-center justify-between rounded-xl border-2 bg-muted/20 p-4 hover:bg-muted/40 peer-data-[state=checked]:border-accent cursor-pointer transition-all",
-                            themeColor === theme.id && "border-accent bg-accent/5"
+                            themeColor === theme.id ? "border-accent bg-accent/5" : "border-border"
                           )}
                         >
                           <div className={cn("h-6 w-6 rounded-full mb-2", theme.color)} />
@@ -128,7 +169,7 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="language">
-            <Card>
+            <Card className="border-border">
               <CardHeader>
                 <CardTitle className="text-foreground text-lg flex items-center gap-2">
                   <Languages className="h-5 w-5 text-accent" /> {t.settings.loc_title}
@@ -139,7 +180,7 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-bold text-muted-foreground tracking-widest">{t.settings.sys_lang}</Label>
                   <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
-                    <SelectTrigger className="h-12">
+                    <SelectTrigger className="h-12 bg-muted/20 border-border">
                       <SelectValue placeholder={t.settings.sys_lang} />
                     </SelectTrigger>
                     <SelectContent>
@@ -154,7 +195,7 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="accessibility">
-            <Card>
+            <Card className="border-border">
               <CardHeader>
                 <CardTitle className="text-foreground text-lg flex items-center gap-2">
                   <Type className="h-5 w-5 text-accent" /> {t.settings.acc_title}
@@ -179,7 +220,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="p-6 rounded-2xl bg-muted/20 border">
+                <div className="p-6 rounded-2xl bg-muted/20 border border-border">
                   <p className="text-muted-foreground mb-4 text-xs italic">{t.settings.preview}</p>
                   <p style={{ fontSize: `${fontSize}px` }} className="text-foreground leading-relaxed">
                     {t.settings.preview_txt}
@@ -193,8 +234,8 @@ export default function SettingsPage() {
         <div className="flex justify-end gap-4 pb-20 md:pb-0">
           <Button 
             variant="outline" 
-            className="px-8"
-            onClick={() => window.history.back()}
+            className="px-8 border-border"
+            onClick={handleCancel}
           >
             {t.common.cancel}
           </Button>

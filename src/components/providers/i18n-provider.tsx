@@ -6,6 +6,7 @@ import { translations, Language } from "@/app/lib/i18n";
 interface I18nContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
+  persistLanguage: (lang: Language) => void;
   t: typeof translations.es;
 }
 
@@ -23,12 +24,16 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
+  };
+
+  const persistLanguage = (lang: Language) => {
     localStorage.setItem("zyra-language", lang);
   };
 
   const value = {
     language,
     setLanguage: handleSetLanguage,
+    persistLanguage,
     t: translations[language] || translations.es,
   };
 
@@ -42,7 +47,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 export function useI18n() {
   const context = useContext(I18nContext);
   if (!context) {
-    throw new Error("useI18n must be used within an I18nProvider");
+    throw new Error("useI18n must be used within a I18nProvider");
   }
   return context;
 }
