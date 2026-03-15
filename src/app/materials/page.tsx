@@ -38,7 +38,8 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogFooter,
-  DialogTrigger
+  DialogTrigger,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { 
   Tabs, 
@@ -440,4 +441,3 @@ export default function MaterialsPage() {
     </DashboardLayout>
   );
 }
-
