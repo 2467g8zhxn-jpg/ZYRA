@@ -44,9 +44,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, Plus, Search, Mail, ShieldCheck, UserCircle, Star, Lock, Copy, Loader2, Trash2 } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Users, Plus, Search, Mail, ShieldCheck, UserCircle, Star, Lock, Copy, Loader2, Trash2, Zap, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/components/providers/i18n-provider";
 
 export default function EmployeesPage() {
@@ -58,6 +58,8 @@ export default function EmployeesPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   
   const [showCredentials, setShowCredentials] = useState(false);
@@ -176,6 +178,11 @@ export default function EmployeesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewProfile = (emp: any) => {
+    setSelectedEmployee(emp);
+    setIsViewDialogOpen(true);
   };
 
   const copyToClipboard = (text: string) => {
@@ -366,7 +373,14 @@ export default function EmployeesPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <Button variant="ghost" size="sm" className="text-accent hover:bg-accent/10 font-bold text-[10px]">{t.employees.view_profile}</Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-accent hover:bg-accent/10 font-bold text-[10px]"
+                            onClick={() => handleViewProfile(emp)}
+                          >
+                            {t.employees.view_profile}
+                          </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
@@ -405,6 +419,76 @@ export default function EmployeesPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* View Profile Dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="bg-card border-border sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-accent flex items-center gap-2">
+                <UserCircle className="h-5 w-5" /> {t.employees.view_profile}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedEmployee && (
+              <div className="space-y-6 py-4">
+                <div className="flex flex-col items-center gap-4 border-b border-border pb-6">
+                  <div className="h-20 w-20 rounded-full bg-accent/10 border-2 border-accent/20 flex items-center justify-center">
+                    <span className="text-2xl font-black text-accent">
+                      {(selectedEmployee.Emp_Nombre || selectedEmployee.nombre || "?").substring(0,2).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-xl font-bold text-foreground">{selectedEmployee.Emp_Nombre || selectedEmployee.nombre}</h3>
+                    <p className="text-[10px] text-accent font-black uppercase tracking-[0.2em] mt-1">Técnico Operativo</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/30 p-3 rounded-xl border border-border">
+                    <Label className="text-[9px] uppercase font-bold text-muted-foreground block mb-1">Nivel Actual</Label>
+                    <div className="flex items-center gap-2 text-sm font-black text-foreground">
+                      <Zap className="h-4 w-4 text-accent" /> {selectedEmployee.nivel || 1}
+                    </div>
+                  </div>
+                  <div className="bg-muted/30 p-3 rounded-xl border border-border">
+                    <Label className="text-[9px] uppercase font-bold text-muted-foreground block mb-1">Puntos Totales</Label>
+                    <div className="flex items-center gap-2 text-sm font-black text-foreground">
+                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" /> {selectedEmployee.puntos || 0} pts
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Email de Acceso ZYRA</Label>
+                    <div className="flex items-center gap-3 text-sm text-foreground bg-muted/20 p-3 rounded-xl border border-border/50">
+                      <Mail className="h-4 w-4 text-accent" /> 
+                      <span className="font-medium">{selectedEmployee.emailAcceso || selectedEmployee.email || "N/A"}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Email Personal</Label>
+                    <div className="flex items-center gap-3 text-sm text-foreground bg-muted/20 p-3 rounded-xl border border-border/50">
+                      <Mail className="h-4 w-4 text-muted-foreground" /> 
+                      <span className="font-medium">{selectedEmployee.emailPersonal || "N/A"}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Teléfono de Contacto</Label>
+                    <div className="flex items-center gap-3 text-sm text-foreground bg-muted/20 p-3 rounded-xl border border-border/50">
+                      <Phone className="h-4 w-4 text-accent" /> 
+                      <span className="font-medium">{selectedEmployee.telefono || "N/A"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button className="w-full bg-accent hover:bg-accent/90 text-white font-bold h-12" onClick={() => setIsViewDialogOpen(false)}>
+                {t.common.back}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
