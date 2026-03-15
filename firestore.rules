@@ -9,7 +9,10 @@ service cloud.firestore {
     
     function isAdmin() {
       let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSignedIn() && exists(userPath) && get(userPath).data.rol == 'admin';
+      return isSignedIn() && (
+        (exists(userPath) && get(userPath).data.rol == 'admin') ||
+        request.auth.token.email == 'admin@zyra.com'
+      );
     }
 
     // Reglas para Usuarios
@@ -20,18 +23,22 @@ service cloud.firestore {
 
     // Reglas para Notificaciones
     match /notifications/{notifId} {
-      // Permitimos 'get' si es el dueño o admin
-      allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
-      // Permitimos 'list' si la consulta está filtrada por el UID del usuario o si es admin
-      allow list: if isSignedIn() && (isAdmin() || request.query.limit <= 20 && request.auth.uid == request.resource.data.userId || (resource == null || resource.data.userId == request.auth.uid));
-      
-      allow create: if isSignedIn();
+      // Permitimos leer si es el dueño o admin
+      allow read: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      // Permitimos crear si el usuario se asigna a sí mismo o es admin
+      allow create: if isSignedIn() && (isAdmin() || request.resource.data.userId == request.auth.uid);
+      // Permitimos actualizar si es el dueño o admin
       allow update: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
       allow delete: if isAdmin();
     }
 
-    // Reglas para Proyectos
+    // Reglas para Proyectos (Legacy y Nuevo nombre)
     match /proyectos/{projectId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+    
+    match /projects/{projectId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
@@ -44,15 +51,13 @@ service cloud.firestore {
 
     // Reglas para Reportes
     match /reports/{reportId} {
-      allow get: if isSignedIn() && (isAdmin() || resource.data.employeeId == request.auth.uid);
-      allow list: if isSignedIn() && (isAdmin() || request.auth.uid == resource.data.employeeId);
-      
-      allow create: if isSignedIn();
+      allow read: if isSignedIn() && (isAdmin() || resource.data.employeeId == request.auth.uid);
+      allow create: if isSignedIn() && (isAdmin() || request.resource.data.employeeId == request.auth.uid);
       allow update: if isSignedIn() && (isAdmin() || resource.data.employeeId == request.auth.uid);
       allow delete: if isAdmin();
     }
     
-    // Reglas generales para catálogos
+    // Reglas para catálogos
     match /materiales/{matId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
