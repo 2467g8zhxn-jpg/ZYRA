@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Bell, Check, Info, AlertTriangle, Zap, Briefcase, Users } from "lucide-react";
+import { Bell, Check, Info, Zap, Briefcase, Users } from "lucide-react";
 import { 
   Popover, 
   PopoverContent, 
@@ -20,14 +20,15 @@ export function NotificationCenter() {
   const db = useFirestore();
 
   const notificationsQuery = useMemoFirebase(() => {
-    if (!db || !user) return null;
+    // Usamos user?.uid para asegurar que la consulta solo se cree cuando el usuario está listo
+    if (!db || !user?.uid) return null;
     return query(
       collection(db, "notifications"),
       where("userId", "==", user.uid),
       orderBy("createdAt", "desc"),
       limit(20)
     );
-  }, [db, user]);
+  }, [db, user?.uid]);
 
   const { data: notifications, isLoading } = useCollection(notificationsQuery);
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
@@ -35,7 +36,8 @@ export function NotificationCenter() {
   const markAsRead = async (id: string) => {
     if (!db) return;
     const notifRef = doc(db, "notifications", id);
-    await updateDoc(notifRef, { read: true });
+    // Actualización silenciosa sin await para mayor fluidez
+    updateDoc(notifRef, { read: true });
   };
 
   const getIcon = (type: string) => {

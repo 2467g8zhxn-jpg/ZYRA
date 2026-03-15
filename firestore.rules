@@ -3,7 +3,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSignedIn() { return request.auth != null; }
-    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     
     // Función robusta para verificar rol de administrador
     function isAdmin() { 
@@ -14,16 +13,15 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow write: if isOwner(userId) || isAdmin();
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
     match /notifications/{notifId} {
       // Permitir lectura si el documento pertenece al usuario o si es admin
-      // La condición de listado se satisface si la consulta está filtrada por userId
+      // La regla 'read' cubre tanto 'get' como 'list'
       allow read: if isSignedIn() && (
-        (resource == null) || 
-        (resource.data.userId == request.auth.uid) || 
-        isAdmin()
+        isAdmin() || 
+        (resource != null && resource.data.userId == request.auth.uid)
       );
       allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn();
@@ -41,14 +39,26 @@ service cloud.firestore {
     }
 
     match /teams/{teamId} {
-      allow read: if isSignedIn();
+      // Los empleados pueden leer equipos si son miembros
+      allow read: if isSignedIn() && (
+        isAdmin() || 
+        (resource != null && request.auth.uid in resource.data.members)
+      );
       allow write: if isAdmin();
     }
 
     match /reports/{reportId} {
-      allow read: if isSignedIn();
+      // Los empleados ven sus propios reportes, el admin ve todos
+      allow read: if isSignedIn() && (
+        isAdmin() || 
+        (resource != null && resource.data.employeeId == request.auth.uid)
+      );
       allow create: if isSignedIn();
-      allow update: if isSignedIn();
+      allow update: if isSignedIn() && (
+        isAdmin() || 
+        (resource != null && resource.data.employeeId == request.auth.uid)
+      );
+      allow delete: if isAdmin();
     }
     
     match /materiales/{matId} {
