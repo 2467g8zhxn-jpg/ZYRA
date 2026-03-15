@@ -2,14 +2,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
   History,
   Clock,
   FileText,
   Search
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "../dashboard/layout";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -75,13 +74,6 @@ export default function ReportsPage() {
         </div>
 
         <Card className="bg-card border-white/5 shadow-xl">
-          <CardHeader className="border-b border-white/5 bg-white/2">
-            <CardTitle className="flex items-center gap-2 text-white">
-              <History className="h-5 w-5 text-accent" />
-              Historial de Actividad
-            </CardTitle>
-            <CardDescription>Listado completo de tus reportes operativos validados.</CardDescription>
-          </CardHeader>
           <CardContent className="p-0">
             {filteredReports.length > 0 ? (
               <div className="divide-y divide-white/5">
