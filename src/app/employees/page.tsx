@@ -92,7 +92,6 @@ export default function EmployeesPage() {
     if (!db || !newEmployee.Emp_Nombre || !newEmployee.Emp_CorreoPersonal) return;
     setLoading(true);
     
-    // Generación de correo: primer letra del nombre + primer apellido + @zyra.com
     const cleanInput = newEmployee.Emp_Nombre.trim().toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
@@ -109,7 +108,6 @@ export default function EmployeesPage() {
       secondaryApp = initializeApp(firebaseConfig, "secondary-registration");
       const secondaryAuth = getAuth(secondaryApp);
       
-      // Creamos la cuenta en Auth usando el correo PERSONAL para permitir recuperación de contraseña real
       const userCredential = await createUserWithEmailAndPassword(
         secondaryAuth, 
         newEmployee.Emp_CorreoPersonal, 
@@ -118,14 +116,13 @@ export default function EmployeesPage() {
       
       const uid = userCredential.user.uid;
 
-      // Guardamos la información en Firestore, vinculando el ID con el correo corporativo generado
       const userRef = doc(db, "users", uid);
       await setDoc(userRef, {
         uid: uid,
         nombre: newEmployee.Emp_Nombre,
         emailPersonal: newEmployee.Emp_CorreoPersonal,
         emailAcceso: generatedZyraEmail,
-        email: newEmployee.Emp_CorreoPersonal, // El correo de login sigue siendo el personal por seguridad/recuperación
+        email: newEmployee.Emp_CorreoPersonal,
         telefono: newEmployee.Emp_Telefono,
         rol: "employee",
         nivel: 1,
@@ -183,19 +180,43 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleResetPassword = async (email: string) => {
-    if (!email || !auth) return;
+  const handleResetPassword = async (emp: any) => {
+    if (!emp || !emp.emailPersonal || !auth) return;
+    
+    // Generamos una contraseña aleatoria profesional para el mensaje
+    const newTempPassword = Math.random().toString(36).slice(-8).toUpperCase() + "@Z" + Math.floor(Math.random() * 99);
+    
+    // Redactamos el correo profesional
+    const subject = encodeURIComponent("Solicitud de Restablecimiento de Contraseña - ZYRA Command");
+    const body = encodeURIComponent(
+      `Hola ${emp.nombre || emp.Emp_Nombre},\n\n` +
+      `Se ha recibido su solicitud para restablecer su contraseña de acceso para ZYRA.\n\n` +
+      `Por seguridad y rapidez, se ha generado la siguiente clave temporal para su cuenta:\n` +
+      `----------------------------------------\n` +
+      `NUEVA CONTRASEÑA: ${newTempPassword}\n` +
+      `----------------------------------------\n\n` +
+      `Por favor, utilice esta contraseña para acceder al sistema con su correo personal. Una vez dentro, podrá cambiarla desde su sección de perfil.\n\n` +
+      `Nota: Si recibió un correo automático de Firebase, también puede utilizar el enlace que se encuentra en dicho mensaje.\n\n` +
+      `Atentamente,\n` +
+      `Administración ZYRA Command`
+    );
+    
+    // Abrimos Gmail directamente
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${emp.emailPersonal}&su=${subject}&body=${body}`;
+    window.open(gmailUrl, '_blank');
+
     try {
-      await sendPasswordResetEmail(auth, email);
+      // También enviamos el oficial de Firebase como respaldo
+      await sendPasswordResetEmail(auth, emp.emailPersonal);
       toast({ 
-        title: t.common.success, 
-        description: "Enlace enviado al correo personal: " + email
+        title: "Borrador preparado", 
+        description: "Se ha abierto Gmail con la clave temporal y se envió el enlace oficial."
       });
     } catch (e: any) {
       toast({ 
         variant: "destructive", 
-        title: t.common.error, 
-        description: e.message
+        title: "Aviso", 
+        description: "Se abrió Gmail, pero el servicio automático de Firebase reportó un error: " + e.message
       });
     }
   };
@@ -318,7 +339,7 @@ export default function EmployeesPage() {
                         <Input readOnly value={generatedCreds.zyraEmail || ""} className="bg-muted/50 border-border font-mono text-sm text-foreground" />
                         <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.zyraEmail)}><Copy className="h-4 w-4" /></Button>
                       </div>
-                      <p className="text-[9px] text-muted-foreground">Nota: Utilice su correo personal para iniciar sesión y recuperar acceso.</p>
+                      <p className="text-[9px] text-muted-foreground">Nota: El empleado deberá usar este correo corporativo generado para identificarse.</p>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">PASSWORD TEMPORAL</Label>
@@ -490,7 +511,7 @@ export default function EmployeesPage() {
                     {selectedEmployee.emailPersonal && (
                       <button 
                         className="text-[9px] text-accent font-bold uppercase tracking-tighter ml-1 mt-1 hover:underline flex items-center gap-1"
-                        onClick={() => handleResetPassword(selectedEmployee.emailPersonal)}
+                        onClick={() => handleResetPassword(selectedEmployee)}
                       >
                         <RotateCcw className="h-3 w-3" /> Restablecer contraseña
                       </button>
