@@ -23,7 +23,7 @@ import { Slider } from "@/components/ui/slider";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Moon, Sun, Languages, Type, Palette, Save, Globe, RotateCcw } from "lucide-react";
+import { Settings, Moon, Sun, Languages, Type, Palette, Save, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/providers/i18n-provider";
@@ -175,7 +175,7 @@ export default function SettingsPage() {
                   <Languages className="h-5 w-5 text-accent" /> {t.settings.loc_title}
                 </CardTitle>
                 <CardDescription>{t.settings.loc_desc}</CardDescription>
-              </Header>
+              </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-bold text-muted-foreground tracking-widest">{t.settings.sys_lang}</Label>
