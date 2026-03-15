@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import DashboardLayout from "../dashboard/layout";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, serverTimestamp, doc, setDoc, deleteDoc, query, where } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, setDoc, query, where } from "firebase/firestore";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,8 @@ import {
   Trash2, 
   Wrench,
   UserCheck,
-  Settings2
+  Settings2,
+  ChevronRight
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -83,9 +84,10 @@ export default function TeamPage() {
   }, [db, isAdmin, user]);
 
   const employeesQuery = useMemoFirebase(() => {
-    if (!db || !isAdmin) return null;
+    if (!db || !user) return null;
+    // Permitimos a todos los usuarios ver la lista básica para resolver nombres de compañeros
     return collection(db, "users");
-  }, [db, isAdmin]);
+  }, [db, user]);
 
   const { data: teams, isLoading: teamsLoading } = useCollection(teamsQuery);
   const { data: employees } = useCollection(employeesQuery);
@@ -282,6 +284,7 @@ export default function TeamPage() {
                     <div className="p-3 rounded-xl bg-accent/20 text-accent">
                       {team.type === 'Mantenimiento' ? <Wrench className="h-6 w-6" /> : <UsersIcon className="h-6 w-6" />}
                     </div>
+                    <Badge variant="outline" className="text-[10px] uppercase font-bold text-accent border-accent/30">{team.status || "DISPONIBLE"}</Badge>
                   </div>
                   <CardTitle className="text-xl font-bold text-white mt-4">{team.name}</CardTitle>
                   <p className="text-[10px] text-accent font-bold uppercase tracking-widest">{team.type || "Instalación"}</p>
@@ -289,12 +292,30 @@ export default function TeamPage() {
                     <Crown className="h-3 w-3 text-yellow-500" /> {t.teams.leader}: {team.leaderName}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   <div className="bg-white/5 rounded-xl p-3 border border-white/5 text-center">
                     <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">{t.teams.members}</p>
                     <p className="text-lg font-bold text-white flex items-center justify-center gap-2">
                       {team.members?.length || 0} <UserCheck className="h-4 w-4 text-accent" />
                     </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <p className="text-[9px] uppercase font-black text-muted-foreground tracking-widest ml-1 mb-2">Cuadrilla Activa</p>
+                    {team.members?.map((memberId: string) => {
+                      const member = employees?.find(e => e.id === memberId);
+                      return (
+                        <div key={memberId} className="flex items-center justify-between p-2.5 rounded-xl bg-white/2 border border-white/5 group/member hover:bg-accent/5 transition-colors">
+                          <div className="flex items-center gap-3 truncate">
+                            <div className="h-6 w-6 rounded-full bg-accent/10 flex items-center justify-center text-[9px] font-bold text-accent border border-accent/20">
+                              {(member?.nombre || member?.Emp_Nombre || "?").substring(0,2).toUpperCase()}
+                            </div>
+                            <span className="text-xs font-bold text-white/80 truncate">{member?.nombre || member?.Emp_Nombre || "Sincronizando..."}</span>
+                          </div>
+                          <ChevronRight className="h-3 w-3 text-muted-foreground/30 opacity-0 group-hover/member:opacity-100 transition-opacity" />
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
                 {isAdmin && (
