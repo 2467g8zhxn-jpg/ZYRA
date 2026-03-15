@@ -1,7 +1,7 @@
+
 "use client";
 
 import { StatCard } from "@/components/dashboard/stat-card";
-import { useAuth } from "@/lib/firebase/auth-context";
 import { 
   Trophy, 
   Flame, 
@@ -9,48 +9,55 @@ import {
   TrendingUp, 
   Zap, 
   CheckCircle2, 
-  AlertCircle 
+  ClipboardList,
+  Briefcase
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
-  const { profile } = useAuth();
+  // Datos mock para el dashboard
+  const profile = {
+    nombre: "Operador Zyra",
+    nivel: 5,
+    puntos: 1250,
+    racha: 7,
+    logros: ["Pionero", "Reporte Maestro"]
+  };
 
-  // Gamification progress calculation
-  const nextLevelPoints = (profile?.nivel || 1) * 200;
-  const progressPercentage = profile?.puntos ? (profile.puntos / nextLevelPoints) * 100 : 0;
+  const nextLevelPoints = profile.nivel * 200;
+  const progressPercentage = (profile.puntos % nextLevelPoints) / nextLevelPoints * 100;
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       <div className="flex flex-col gap-2">
-        <h2 className="text-3xl font-bold tracking-tight">Bienvenido, {profile?.nombre}</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-white">Bienvenido, {profile.nombre}</h2>
         <p className="text-muted-foreground">Aquí tienes un resumen de tu actividad y progreso operacional.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Nivel Actual"
-          value={profile?.nivel || 1}
+          value={profile.nivel}
           icon={Zap}
           description={`Próximo nivel: ${nextLevelPoints} pts`}
           progress={progressPercentage}
         />
         <StatCard
           title="Puntos Zyra"
-          value={profile?.puntos || 0}
+          value={profile.puntos}
           icon={Star}
           description="Total acumulado"
         />
         <StatCard
           title="Racha Diaria"
-          value={`${profile?.racha || 0} Días`}
+          value={`${profile.racha} Días`}
           icon={Flame}
           description="¡No te detengas!"
         />
         <StatCard
           title="Logros"
-          value={profile?.logros?.length || 0}
+          value={profile.logros.length}
           icon={Trophy}
           description="Medallas obtenidas"
         />
@@ -59,7 +66,7 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <Card className="lg:col-span-4 bg-card border-white/5">
           <CardHeader>
-            <CardTitle>Próximos Pasos</CardTitle>
+            <CardTitle className="text-white">Próximos Pasos</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:border-accent/30 transition-all group">
@@ -78,7 +85,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10 opacity-70">
+            <div className="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
               <div className="h-10 w-10 shrink-0 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
                 <Briefcase className="h-6 w-6" />
               </div>
@@ -95,13 +102,13 @@ export default function DashboardPage() {
 
         <Card className="lg:col-span-3 bg-card border-white/5">
           <CardHeader>
-            <CardTitle>Actividad Reciente</CardTitle>
+            <CardTitle className="text-white">Actividad Reciente</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               {[
                 { label: "Reporte validado", time: "Hace 2h", points: "+50", icon: CheckCircle2, color: "text-green-500" },
-                { label: "Nuevo nivel alcanzado", time: "Ayer", points: "Lv. 8", icon: TrendingUp, color: "text-accent" },
+                { label: "Nuevo nivel alcanzado", time: "Ayer", points: "Lv. 5", icon: TrendingUp, color: "text-accent" },
                 { label: "Mantenimiento preventivo", time: "Ayer", points: "+50", icon: CheckCircle2, color: "text-green-500" },
                 { label: "Check-in semanal", time: "2 días", points: "+100", icon: Star, color: "text-primary" },
               ].map((activity, i) => (
@@ -123,6 +130,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-import { ClipboardList } from "lucide-react";
-import { Briefcase } from "lucide-react";

@@ -10,14 +10,23 @@ export function useUser() {
   const auth = useAuth();
   const db = useFirestore();
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any | null>({
+    nombre: "Operador Zyra (Demo)",
+    rol: "employee",
+    nivel: 5,
+    puntos: 1250,
+    racha: 7,
+    logros: ["Pionero", "Reporte Maestro"]
+  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!auth) return;
+
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (!currentUser) {
-        setProfile(null);
+        // En modo demo mantenemos el perfil mock
         setLoading(false);
       }
     });
@@ -26,7 +35,7 @@ export function useUser() {
   }, [auth]);
 
   useEffect(() => {
-    if (user) {
+    if (user && db) {
       const userRef = doc(db, 'users', user.uid);
       const unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
         if (docSnap.exists()) {

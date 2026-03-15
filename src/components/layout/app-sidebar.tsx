@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -11,8 +12,6 @@ import {
   Zap
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
 import {
   Sidebar,
   SidebarContent,
@@ -26,16 +25,15 @@ import {
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/lib/firebase/auth-context";
 
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { profile } = useAuth();
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push("/login");
+  // Datos mock para el perfil
+  const profile = {
+    nombre: "Operador Zyra",
+    rol: "employee"
   };
 
   const navItems = [
@@ -86,24 +84,13 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <div className="flex items-center gap-3 px-2 py-2 mb-2 group-data-[collapsible=icon]:hidden">
               <Avatar className="h-9 w-9 border-2 border-accent">
-                <AvatarFallback className="bg-muted text-xs">
-                  {profile?.nombre?.substring(0, 2).toUpperCase() || "ZY"}
-                </AvatarFallback>
+                <AvatarFallback className="bg-muted text-xs">OZ</AvatarFallback>
               </Avatar>
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-semibold truncate text-white">{profile?.nombre || "Usuario"}</span>
-                <span className="text-xs text-muted-foreground truncate uppercase">{profile?.rol || "Employee"}</span>
+                <span className="text-sm font-semibold truncate text-white">{profile.nombre}</span>
+                <span className="text-xs text-muted-foreground truncate uppercase">{profile.rol}</span>
               </div>
             </div>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton 
-              onClick={handleLogout}
-              className="text-muted-foreground hover:text-white hover:bg-destructive/20"
-            >
-              <LogOut />
-              <span>Cerrar Sesión</span>
-            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
