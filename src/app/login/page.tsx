@@ -11,8 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
   const auth = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  // Se establecen las credenciales solicitadas como valores iniciales
+  const [email, setEmail] = useState("admin@zyra.com");
+  const [password, setPassword] = useState("admin123");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -28,7 +29,7 @@ export default function LoginPage() {
       toast({ 
         variant: "destructive", 
         title: "Error de autenticación", 
-        description: "Credenciales inválidas o cuenta no registrada." 
+        description: "Credenciales inválidas. Asegúrese de que el usuario exista en su consola de Firebase Auth." 
       });
     } finally {
       setLoading(false);
@@ -39,7 +40,6 @@ export default function LoginPage() {
     <div className="flex min-h-screen font-body overflow-hidden">
       {/* Lado Izquierdo: Branding */}
       <div className="hidden lg:flex flex-1 bg-[#0d041a] items-center justify-center relative overflow-hidden">
-        {/* Luces de fondo suaves */}
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-accent/10 blur-[150px] rounded-full" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full" />
         
@@ -61,7 +61,7 @@ export default function LoginPage() {
               ¡Hola!
             </h2>
             <p className="text-gray-500 text-lg">
-              Accede con tus credenciales guardadas.
+              Accede con tus credenciales administrativas.
             </p>
           </div>
 
@@ -92,6 +92,10 @@ export default function LoginPage() {
             >
               {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
             </Button>
+            
+            <p className="text-center text-xs text-muted-foreground mt-4">
+              Sistema de Gestión Operativa ZYRA v1.0
+            </p>
           </form>
         </div>
       </div>
