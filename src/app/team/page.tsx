@@ -4,7 +4,7 @@
 import { useState, useMemo } from "react";
 import DashboardLayout from "../dashboard/layout";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,15 +35,20 @@ import {
   Zap, 
   UserPlus, 
   Briefcase,
-  TrendingUp
+  TrendingUp,
+  Settings2,
+  Trash2,
+  MoreVertical
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 // Demo data for fallback
 const FALLBACK_TEAMS = [
-  { id: "team-1", name: "Equipo Alpha Operativo", leaderName: "Carlos Rivera", memberCount: 4, status: "Activo" },
-  { id: "team-2", name: "Cuadrilla Solar Sur", leaderName: "Andrea Soto", memberCount: 3, status: "Disponible" },
+  { id: "team-1", name: "Equipo Alpha Operativo", leaderName: "Carlos Rivera", leaderId: "l1", memberCount: 4, status: "Activo" },
+  { id: "team-2", name: "Cuadrilla Solar Sur", leaderName: "Andrea Soto", leaderId: "l2", memberCount: 3, status: "Disponible" },
 ];
 
 export default function TeamPage() {
@@ -54,6 +59,8 @@ export default function TeamPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isReassignDialogOpen, setIsReassignDialogOpen] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   // Form states
@@ -87,23 +94,90 @@ export default function TeamPage() {
   const handleCreateTeam = async () => {
     if (!db) return;
     setLoading(true);
-    try {
-      await addDoc(collection(db, "teams"), {
-        ...newTeam,
-        createdAt: serverTimestamp(),
+    const colRef = collection(db, "teams");
+    const data = {
+      ...newTeam,
+      createdAt: serverTimestamp(),
+    };
+
+    addDoc(colRef, data)
+      .then(() => {
+        toast({ title: "Equipo Creado", description: `El equipo ${newTeam.name} ha sido registrado.` });
+        setIsCreateDialogOpen(false);
+        setNewTeam({ name: "", leaderId: "", leaderName: "", memberCount: 1, status: "Disponible" });
+      })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: colRef.path,
+          operation: 'create',
+          requestResourceData: data,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  const handleReassignLeader = async (teamId: string, newLeaderId: string) => {
+    if (!db) return;
+    const teamRef = doc(db, "teams", teamId);
+    const leader = employees?.find(e => e.id === newLeaderId);
+    const updateData = {
+      leaderId: newLeaderId,
+      leaderName: leader?.Emp_Nombre || leader?.nombre || "Técnico Zyra"
+    };
+
+    updateDoc(teamRef, updateData)
+      .then(() => {
+        toast({ title: "Líder Reasignado", description: "El equipo ahora tiene un nuevo supervisor." });
+        setIsReassignDialogOpen(false);
+      })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: teamRef.path,
+          operation: 'update',
+          requestResourceData: updateData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
       });
-      toast({ title: "Equipo Creado", description: `El equipo ${newTeam.name} ha sido registrado.` });
-      setIsCreateDialogOpen(false);
-      setNewTeam({ name: "", leaderId: "", leaderName: "", memberCount: 1, status: "Disponible" });
-    } catch (e: any) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo crear el equipo." });
-    } finally {
-      setLoading(false);
-    }
+  };
+
+  const handleToggleStatus = (team: any) => {
+    if (!db) return;
+    const teamRef = doc(db, "teams", team.id);
+    const newStatus = team.status === "Activo" ? "Disponible" : "Activo";
+    
+    updateDoc(teamRef, { status: newStatus })
+      .then(() => {
+        toast({ title: "Estado Actualizado", description: `El equipo ${team.name} ahora está ${newStatus.toLowerCase()}.` });
+      })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: teamRef.path,
+          operation: 'update',
+          requestResourceData: { status: newStatus },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
+  };
+
+  const handleDeleteTeam = (teamId: string) => {
+    if (!db) return;
+    const teamRef = doc(db, "teams", teamId);
+    
+    deleteDoc(teamRef)
+      .then(() => {
+        toast({ title: "Equipo Disuelto", description: "La cuadrilla ha sido eliminada del sistema." });
+      })
+      .catch(async (err) => {
+        const permissionError = new FirestorePermissionError({
+          path: teamRef.path,
+          operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   if (!isAdmin) {
-    // Vista de Empleado (Actualizada para ser dinámica)
     return (
       <DashboardLayout>
         <div className="max-w-7xl mx-auto space-y-8 font-body">
@@ -118,7 +192,6 @@ export default function TeamPage() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Aquí irían los compañeros de equipo del empleado */}
             <Card className="bg-card border-white/5 overflow-hidden relative border-l-4 border-l-yellow-500">
               <div className="absolute top-4 right-4">
                 <Crown className="h-5 w-5 text-yellow-500" />
@@ -187,7 +260,6 @@ export default function TeamPage() {
     );
   }
 
-  // Vista de Administrador
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-8 font-body">
@@ -293,16 +365,29 @@ export default function TeamPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-accent"></div>
             </div>
           ) : displayTeams.map((team) => (
-            <Card key={team.id} className="bg-card border-white/10 hover:border-accent/40 transition-all group overflow-hidden shadow-2xl">
+            <Card key={team.id} className="bg-card border-white/10 hover:border-accent/40 transition-all group overflow-hidden shadow-2xl relative">
+              <div className="absolute top-2 right-2">
+                 <Button 
+                   variant="ghost" 
+                   size="icon" 
+                   className="text-muted-foreground hover:text-red-500"
+                   onClick={() => handleDeleteTeam(team.id)}
+                 >
+                   <Trash2 className="h-4 w-4" />
+                 </Button>
+              </div>
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="p-3 rounded-xl bg-accent/20 text-accent group-hover:scale-110 transition-transform">
                     <UsersIcon className="h-6 w-6" />
                   </div>
-                  <Badge className={cn(
-                    "font-bold text-[10px] uppercase",
-                    team.status === "Activo" ? "bg-primary text-background" : "bg-emerald-500 text-white"
-                  )}>
+                  <Badge 
+                    onClick={() => handleToggleStatus(team)}
+                    className={cn(
+                      "font-bold text-[10px] uppercase cursor-pointer hover:opacity-80 transition-opacity",
+                      team.status === "Activo" ? "bg-primary text-background" : "bg-emerald-500 text-white"
+                    )}
+                  >
                     {team.status || "DISPONIBLE"}
                   </Badge>
                 </div>
@@ -348,13 +433,65 @@ export default function TeamPage() {
                 </div>
               </CardContent>
               <div className="p-4 bg-white/2 border-t border-white/5 flex gap-2">
-                <Button variant="ghost" className="flex-1 text-[10px] font-bold text-muted-foreground hover:text-white uppercase">Detalles</Button>
-                <Button variant="outline" className="flex-1 text-[10px] font-bold border-accent/30 text-accent hover:bg-accent/10 uppercase">Reasignar</Button>
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 text-[10px] font-bold text-muted-foreground hover:text-white uppercase"
+                  onClick={() => {
+                    toast({ title: "Módulo en construcción", description: "El histórico detallado de cuadrilla estará disponible pronto." });
+                  }}
+                >
+                  Detalles
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex-1 text-[10px] font-bold border-accent/30 text-accent hover:bg-accent/10 uppercase"
+                  onClick={() => {
+                    setSelectedTeam(team);
+                    setIsReassignDialogOpen(true);
+                  }}
+                >
+                  Reasignar
+                </Button>
               </div>
             </Card>
           ))}
         </div>
+
+        {/* Modal para Reasignar Líder */}
+        <Dialog open={isReassignDialogOpen} onOpenChange={setIsReassignDialogOpen}>
+          <DialogContent className="bg-card border-white/10 text-white sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-accent flex items-center gap-2">
+                <Settings2 className="h-5 w-5" /> Reasignar Liderazgo
+              </DialogTitle>
+              <DialogDescription>
+                Cambie al supervisor responsable del {selectedTeam?.name}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs uppercase font-bold text-muted-foreground">Nuevo Líder Zyra</Label>
+                <Select onValueChange={(val) => handleReassignLeader(selectedTeam.id, val)}>
+                  <SelectTrigger className="bg-white/5 border-white/10 h-12">
+                    <SelectValue placeholder="Seleccionar nuevo líder" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-white/10 text-white">
+                    {employees?.filter(e => e.rol !== 'admin' && e.id !== selectedTeam?.leaderId).map(emp => (
+                      <SelectItem key={emp.id} value={emp.id}>{emp.Emp_Nombre || emp.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => setIsReassignDialogOpen(false)}>
+                Cancelar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
 }
+
