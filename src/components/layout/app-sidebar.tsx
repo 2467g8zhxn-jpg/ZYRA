@@ -50,9 +50,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarHeader className="p-4 border-b border-border">
-        <div className="flex items-center gap-3 px-1">
-          <ZyraLogo className="h-9 w-9 shrink-0" />
+      <SidebarHeader className="h-16 flex flex-col justify-center px-4 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:items-center border-b border-border transition-all">
+        <div className="flex items-center gap-3 group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:justify-center">
+          <ZyraLogo className="h-8 w-8 shrink-0 transition-all" />
           <div className="flex flex-col group-data-[collapsible=icon]:hidden overflow-hidden transition-all duration-300">
             <span className="text-xl font-black tracking-tighter text-foreground leading-none">
               ZYRA
