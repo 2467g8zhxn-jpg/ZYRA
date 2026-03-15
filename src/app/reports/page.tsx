@@ -1,10 +1,10 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { 
   FileText,
   Search,
+  Briefcase
 } from "lucide-react";
 import DashboardLayout from "../dashboard/layout";
 import { format } from "date-fns";
@@ -15,13 +15,13 @@ import Image from "next/image";
 import { useUser } from "@/firebase";
 import { cn } from "@/lib/utils";
 
-// Mock data based on the provided screenshot for Admin view
+// Mock data updated to ensure every report is linked to a real project
 const ADMIN_REPORTS_MOCK = [
   { 
     id: "1", 
     fecha: "2026-02-16T10:00:00Z", 
     contenido: "Fuga detectada en tubería de desagüe del sótano. Se requiere acción inmediata para evitar filtraciones mayores.", 
-    proyecto: "N/A",
+    proyecto: "Residencial Las Palmas",
     autor: "Mia Rodriguez",
     estado: "Pendiente",
     imageUrl: "https://picsum.photos/seed/leak/800/600",
@@ -31,7 +31,7 @@ const ADMIN_REPORTS_MOCK = [
     id: "2", 
     fecha: "2026-02-15T15:30:00Z", 
     contenido: "Instalación de cuadro eléctrico principal finalizada en planta 3. Todo según norma NCH4.", 
-    proyecto: "N/A",
+    proyecto: "Parque Solar Atacama",
     autor: "Leo Martinez",
     estado: "Aprobado",
     imageUrl: "https://picsum.photos/seed/electric/800/600",
@@ -41,7 +41,7 @@ const ADMIN_REPORTS_MOCK = [
     id: "3", 
     fecha: "2026-02-14T09:15:00Z", 
     contenido: "Paneles instalados y cableado final en unidad 12A. Pendiente validación de inversor.", 
-    proyecto: "N/A",
+    proyecto: "Residencial Las Palmas",
     autor: "Leo Martinez",
     estado: "Aprobado",
     imageUrl: "https://picsum.photos/seed/panels/800/600",
@@ -51,7 +51,7 @@ const ADMIN_REPORTS_MOCK = [
     id: "4", 
     fecha: "2026-02-12T11:00:00Z", 
     contenido: "Revisión de unidad de aire acondicionado en azotea. Filtros limpios y carga de gas verificada.", 
-    proyecto: "N/A",
+    proyecto: "Planta Industrial BioBio",
     autor: "David Kim",
     estado: "Aprobado",
     imageUrl: "https://picsum.photos/seed/hvac/800/600",
@@ -61,7 +61,7 @@ const ADMIN_REPORTS_MOCK = [
     id: "5", 
     fecha: "2026-02-10T08:00:00Z", 
     contenido: "Mantenimiento preventivo bloqueado por falta de acceso a sala de máquinas.", 
-    proyecto: "N/A",
+    proyecto: "Edificio Horizonte",
     autor: "Mia Rodriguez",
     estado: "Rechazado",
     imageUrl: "https://picsum.photos/seed/locked/800/600",
@@ -83,7 +83,8 @@ export default function ReportsPage() {
   const filteredReports = useMemo(() => {
     return ADMIN_REPORTS_MOCK.filter(report => {
       const matchesSearch = report.contenido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          report.autor.toLowerCase().includes(searchTerm.toLowerCase());
+                          report.autor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          report.proyecto.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesFilter = activeFilter === "Todos" || report.estado === activeFilter;
       return matchesSearch && matchesFilter;
     });
@@ -101,7 +102,7 @@ export default function ReportsPage() {
               Reportes de Trabajo
             </h2>
             <p className="text-muted-foreground">
-              Revise, apruebe o rechace los reportes subidos por empleados.
+              Supervisión de evidencias operativas vinculadas a proyectos activos.
             </p>
           </div>
         </div>
@@ -125,7 +126,7 @@ export default function ReportsPage() {
           <div className="relative w-full lg:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Buscar proyecto, empleado o tarea..." 
+              placeholder="Buscar por proyecto, empleado o contenido..." 
               className="pl-10 bg-white/5 border-white/10 focus:border-accent h-10 text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -140,7 +141,7 @@ export default function ReportsPage() {
               key={report.id} 
               className="bg-card/40 border border-white/10 rounded-2xl overflow-hidden group hover:border-accent/40 transition-all flex flex-col shadow-xl backdrop-blur-sm"
             >
-              {/* Card Image and Badge */}
+              {/* Card Image and Status Badge */}
               <div className="relative aspect-[4/3] w-full overflow-hidden">
                 <Image
                   src={report.imageUrl}
@@ -152,33 +153,33 @@ export default function ReportsPage() {
                 <div className="absolute top-3 right-3">
                   <Badge 
                     className={cn(
-                      "font-bold text-[10px] px-2 py-0.5 border-none",
+                      "font-bold text-[10px] px-2 py-0.5 border-none shadow-lg",
                       report.estado === "Pendiente" && "bg-yellow-200/90 text-yellow-900",
                       report.estado === "Aprobado" && "bg-emerald-200/90 text-emerald-900",
                       report.estado === "Rechazado" && "bg-red-200/90 text-red-900"
                     )}
                   >
-                    {report.estado}
+                    {report.estado.toUpperCase()}
                   </Badge>
                 </div>
               </div>
 
               {/* Card Content */}
               <div className="p-5 flex flex-col flex-1 space-y-4">
-                <p className="text-sm font-semibold text-white leading-snug line-clamp-3 flex-1">
-                  {report.contenido}
-                </p>
-                
-                <div className="space-y-1.5 border-t border-white/5 pt-4">
-                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <span className="font-bold">Proyecto:</span>
-                    <span className="text-white/70">{report.proyecto}</span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-accent">
+                    <Briefcase className="h-3.5 w-3.5" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{report.proyecto}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <span className="font-bold">Por:</span>
-                    <span className="text-white/70">
-                      {report.autor} <span className="text-white/40 ml-1">el {format(new Date(report.fecha), "d/M/yyyy")}</span>
-                    </span>
+                  <p className="text-sm font-semibold text-white leading-snug line-clamp-3">
+                    {report.contenido}
+                  </p>
+                </div>
+                
+                <div className="space-y-1 border-t border-white/5 pt-4 mt-auto">
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="font-bold text-white/70">{report.autor}</span>
+                    <span>{format(new Date(report.fecha), "d/M/yyyy")}</span>
                   </div>
                 </div>
               </div>
@@ -189,12 +190,12 @@ export default function ReportsPage() {
         {/* Empty State */}
         {filteredReports.length === 0 && (
           <div className="flex flex-col items-center justify-center py-32 text-center">
-            <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
+            <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/10">
               <FileText className="h-10 w-10 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-bold text-white uppercase tracking-tighter">Sin reportes</h3>
+            <h3 className="text-xl font-bold text-white uppercase tracking-tighter">Sin reportes encontrados</h3>
             <p className="text-sm text-muted-foreground mt-2 max-w-xs">
-              No se encontraron reportes que coincidan con los criterios de búsqueda o filtros seleccionados.
+              No hay evidencias registradas vinculadas a proyectos que coincidan con los filtros.
             </p>
           </div>
         )}

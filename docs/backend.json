@@ -4,7 +4,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserProfile",
       "type": "object",
-      "description": "Represents a user profile within the ZYRA system, including authentication-related identifiers and gamification statistics. Authentication details like passwords are not stored here.",
+      "description": "Represents a user profile within the ZYRA system, including authentication-related identifiers and gamification statistics.",
       "properties": {
         "id": {
           "type": "string",
@@ -16,11 +16,8 @@
         },
         "role": {
           "type": "string",
-          "description": "The role of the user within the system, defining their permissions.",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
+          "description": "The role of the user within the system.",
+          "enum": ["admin", "employee"]
         },
         "level": {
           "type": "number",
@@ -36,14 +33,14 @@
         },
         "achievementIds": {
           "type": "array",
-          "description": "References to Achievements obtained by the user. (Relationship: UserProfile N:N Achievement)",
+          "description": "References to Achievements obtained by the user.",
           "items": {
             "type": "string"
           }
         },
         "teamId": {
           "type": "string",
-          "description": "Reference to the current Team the user belongs to. (Relationship: Team 1:N UserProfile)"
+          "description": "Reference to the current Team the user belongs to."
         }
       },
       "required": [
@@ -59,7 +56,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Project",
       "type": "object",
-      "description": "Represents a solar energy installation project managed by ZYRA, detailing its status and location.",
+      "description": "Represents a solar energy installation project managed by ZYRA.",
       "properties": {
         "id": {
           "type": "string",
@@ -75,11 +72,8 @@
         },
         "Pry_Estado": {
           "type": "string",
-          "description": "The current operational status of the project (e.g., Pendiente, EnProceso, Finalizado).",
-          "format": "enum",
-          "items": {
-            "type": "string"
-          }
+          "description": "The current operational status of the project.",
+          "enum": ["Pendiente", "EnProceso", "Finalizado"]
         },
         "ubicacion": {
           "type": "string",
@@ -89,6 +83,30 @@
           "type": "number"
         }
       }
+    },
+    "Report": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Report",
+      "type": "object",
+      "description": "Operational report submitted by an employee, linked to a specific project.",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { 
+          "type": "string",
+          "description": "Mandatory reference to the Project this report belongs to."
+        },
+        "projectName": { "type": "string" },
+        "content": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "status": { 
+          "type": "string",
+          "enum": ["Pendiente", "Aprobado", "Rechazado"]
+        },
+        "imageUrl": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["projectId", "content", "authorId", "status"]
     },
     "Material": {
       "title": "Material",
@@ -139,6 +157,10 @@
     "checklist_servicio/{serviceId}": {
       "schema": "#/entities/ServiceChecklist",
       "description": "Plantillas de servicios (Instalación, Mantenimiento)."
+    },
+    "reports/{reportId}": {
+      "schema": "#/entities/Report",
+      "description": "Reportes operativos vinculados a proyectos."
     }
   }
 }
