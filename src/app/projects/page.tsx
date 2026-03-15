@@ -1,4 +1,3 @@
-
 "use client";
 
 import DashboardLayout from "../dashboard/layout";
@@ -42,11 +41,13 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { aiReportDraftingAssistant } from "@/ai/flows/ai-report-drafting-assistant-flow";
+import { useI18n } from "@/components/providers/i18n-provider";
 
 export default function ProjectsPage() {
   const { profile, user, isUserLoading } = useUser();
   const db = useFirestore();
   const { toast } = useToast();
+  const { t } = useI18n();
   const isAdmin = profile?.rol === 'admin';
   
   const [loading, setLoading] = useState(false);
@@ -108,7 +109,7 @@ export default function ProjectsPage() {
         fecha_creacion: new Date().toISOString(),
       });
 
-      toast({ title: "¡Éxito!", description: "Proyecto creado correctamente." });
+      toast({ title: t.common.success, description: t.projects.create_success });
       setIsCreateDialogOpen(false);
       setNewProject({
         Pry_Nombre_Proyecto: "",
@@ -119,7 +120,7 @@ export default function ProjectsPage() {
         imageUrl: "https://picsum.photos/seed/solar-default/800/450"
       });
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo crear el proyecto." });
+      toast({ variant: "destructive", title: t.common.error, description: "Error" });
     } finally {
       setLoading(false);
     }
@@ -141,10 +142,10 @@ export default function ProjectsPage() {
         }
       }, { merge: true });
 
-      toast({ title: "Jornada Iniciada", description: "Protocolo de seguridad validado." });
+      toast({ title: t.projects.day_started, description: t.projects.confirm_start });
       setIsSheetOpen(false);
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Error", description: "Error al iniciar jornada." });
+      toast({ variant: "destructive", title: t.common.error, description: "Error" });
     } finally {
       setLoading(false);
     }
@@ -153,7 +154,7 @@ export default function ProjectsPage() {
   const handleFinishDayAndReport = async (project: any) => {
     if (!user || !db || !profile) return;
     if (!reportContent) {
-      toast({ variant: "destructive", title: "Reporte requerido", description: "Describe las tareas antes de finalizar." });
+      toast({ variant: "destructive", title: t.common.error, description: t.projects.placeholder_notes });
       return;
     }
 
@@ -195,11 +196,11 @@ export default function ProjectsPage() {
         level: newLevel
       }, { merge: true });
 
-      toast({ title: "Reporte Enviado", description: "Has finalizado tu jornada con éxito. +50 pts." });
+      toast({ title: t.projects.day_finished, description: "+50 pts" });
       setIsSheetOpen(false);
       setReportContent("");
     } catch (e: any) {
-      toast({ variant: "destructive", title: "Error", description: "No se pudo enviar el reporte." });
+      toast({ variant: "destructive", title: t.common.error, description: "Error" });
     } finally {
       setLoading(false);
     }
@@ -207,7 +208,7 @@ export default function ProjectsPage() {
 
   const handleAiDraft = async (projectName: string) => {
     if (!reportContent) {
-      toast({ title: "Notas requeridas", description: "Escribe algunas notas básicas para que la IA pueda ayudarte." });
+      toast({ title: t.common.error, description: t.projects.placeholder_notes });
       return;
     }
 
@@ -220,9 +221,9 @@ export default function ProjectsPage() {
       });
 
       setReportContent(result.draftedReportDescription);
-      toast({ title: "Asistente AI", description: "Reporte estructurado profesionalmente." });
+      toast({ title: t.projects.ai_assistant, description: "AI Assistant OK" });
     } catch (e) {
-      toast({ variant: "destructive", title: "Error AI", description: "No se pudo conectar con el asistente." });
+      toast({ variant: "destructive", title: t.common.error, description: "AI Error" });
     } finally {
       setIsAiDrafting(false);
     }
@@ -244,10 +245,10 @@ export default function ProjectsPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-              {isAdmin ? "Proyectos" : "Mis Proyectos"}
+              {isAdmin ? t.projects.title_admin : t.projects.title_op}
             </h2>
             <p className="text-xs md:text-sm text-muted-foreground">
-              {isAdmin ? "Gestión y creación de obras." : "Toca un proyecto para iniciar o finalizar tu jornada."}
+              {isAdmin ? t.projects.subtitle_admin : t.projects.subtitle_op}
             </p>
           </div>
           
@@ -255,16 +256,16 @@ export default function ProjectsPage() {
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-accent hover:bg-accent/90 text-white font-bold gap-2">
-                  <Plus className="h-4 w-4" /> Nuevo Proyecto
+                  <Plus className="h-4 w-4" /> {t.projects.new_project}
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-card border-white/10 text-white sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-accent text-xl">Nuevo Frente de Trabajo</DialogTitle>
+                  <DialogTitle className="text-accent text-xl">{t.projects.new_project}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Nombre del Proyecto</Label>
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t.projects.project_name}</Label>
                     <Input 
                       className="bg-white/5 border-white/10 h-11"
                       value={newProject.Pry_Nombre_Proyecto}
@@ -273,7 +274,7 @@ export default function ProjectsPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Cliente</Label>
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t.projects.client}</Label>
                       <Input 
                         className="bg-white/5 border-white/10 h-11"
                         value={newProject.Cl_ID}
@@ -281,10 +282,10 @@ export default function ProjectsPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Equipo (EQ)</Label>
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t.projects.team_assigned}</Label>
                       <Select onValueChange={(val) => setNewProject({...newProject, Eq_ID: val})}>
                         <SelectTrigger className="bg-white/5 border-white/10 h-11">
-                          <SelectValue placeholder="Asignar" />
+                          <SelectValue placeholder={t.common.back} />
                         </SelectTrigger>
                         <SelectContent className="bg-card border-white/10 text-white">
                           {teams?.map((team) => (
@@ -294,6 +295,14 @@ export default function ProjectsPage() {
                       </Select>
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t.projects.location}</Label>
+                    <Input 
+                      className="bg-white/5 border-white/10 h-11"
+                      value={newProject.ubicacion}
+                      onChange={(e) => setNewProject({...newProject, ubicacion: e.target.value})}
+                    />
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button 
@@ -301,7 +310,7 @@ export default function ProjectsPage() {
                     disabled={!newProject.Pry_Nombre_Proyecto || !newProject.Cl_ID || loading}
                     onClick={handleCreateProject}
                   >
-                    {loading ? "Creando..." : "Registrar Proyecto"}
+                    {loading ? t.common.loading : t.common.create}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -343,7 +352,7 @@ export default function ProjectsPage() {
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold uppercase">
-                        <span>Avance</span>
+                        <span>{t.projects.progress}</span>
                         <span className="text-white">{project.progreso || 0}%</span>
                       </div>
                       <Progress value={project.progreso || 0} className="h-1 bg-white/5" />
@@ -353,8 +362,8 @@ export default function ProjectsPage() {
                   <CardFooter className="p-0 border-t border-white/5">
                     {isAdmin ? (
                       <div className="grid grid-cols-2 w-full">
-                        <Button variant="ghost" className="h-10 text-[10px] font-bold border-r border-white/5 rounded-none uppercase">Equipo</Button>
-                        <Button variant="ghost" className="h-10 text-[10px] font-bold rounded-none uppercase text-accent">Reportes</Button>
+                        <Button variant="ghost" className="h-10 text-[10px] font-bold border-r border-white/5 rounded-none uppercase">{t.nav.teams}</Button>
+                        <Button variant="ghost" className="h-10 text-[10px] font-bold rounded-none uppercase text-accent">{t.nav.reports}</Button>
                       </div>
                     ) : (
                       <Sheet open={isSheetOpen && selectedProject?.id === project.id} onOpenChange={(open) => {
@@ -368,7 +377,7 @@ export default function ProjectsPage() {
                               isEnCurso ? "bg-emerald-600 hover:bg-emerald-700" : "bg-accent hover:bg-accent/90"
                             )}
                           >
-                            {isEnCurso ? "Finalizar Jornada" : "Iniciar Jornada"}
+                            {isEnCurso ? t.projects.finish_day : t.projects.start_day}
                             <ArrowRight className="h-3 w-3 ml-2" />
                           </Button>
                         </SheetTrigger>
@@ -377,7 +386,7 @@ export default function ProjectsPage() {
                           <SheetHeader className="text-left mb-8">
                             <SheetTitle className="text-accent text-2xl font-black">{project.Pry_Nombre_Proyecto}</SheetTitle>
                             <SheetDescription className="text-muted-foreground text-xs uppercase font-bold tracking-widest">
-                              {isEnCurso ? "Cierre técnico del día" : "Checklist de seguridad obligatorio"}
+                              {isEnCurso ? t.projects.finish_day : t.projects.checklist}
                             </SheetDescription>
                           </SheetHeader>
                           
@@ -386,9 +395,9 @@ export default function ProjectsPage() {
                               <div className="space-y-6">
                                 <div className="space-y-4">
                                   {[
-                                    { key: 'epp_completo', label: 'EPP COMPLETO (Casco, Guantes, Zapatos)' },
-                                    { key: 'seguridad_area', label: 'ÁREA DE TRABAJO DELIMITADA Y SEGURA' },
-                                    { key: 'herramientas_listas', label: 'HERRAMIENTAS EN BUEN ESTADO' },
+                                    { key: 'epp_completo', label: t.projects.epp_label },
+                                    { key: 'seguridad_area', label: t.projects.area_label },
+                                    { key: 'herramientas_listas', label: t.projects.tools_label },
                                   ].map((item) => (
                                     <div key={item.key} className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5">
                                       <Label className="text-xs font-bold leading-tight max-w-[70%]">{item.label}</Label>
@@ -404,14 +413,14 @@ export default function ProjectsPage() {
                                   disabled={!checklist.epp_completo || !checklist.seguridad_area || !checklist.herramientas_listas || loading}
                                   onClick={() => handleStartDay(project)}
                                 >
-                                  {loading ? "Validando..." : "CONFIRMAR E INICIAR"}
+                                  {loading ? t.common.loading : t.projects.confirm_start}
                                 </Button>
                               </div>
                             ) : (
                               <div className="space-y-6">
                                 <div className="space-y-4">
                                   <div className="flex items-center justify-between">
-                                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Resumen de Actividades</Label>
+                                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">{t.projects.notes}</Label>
                                     <Button 
                                       variant="outline" 
                                       size="sm" 
@@ -420,11 +429,11 @@ export default function ProjectsPage() {
                                       disabled={isAiDrafting}
                                     >
                                       {isAiDrafting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                                      ASISTENTE IA
+                                      {t.projects.ai_assistant}
                                     </Button>
                                   </div>
                                   <Textarea 
-                                    placeholder="Describe las tareas realizadas hoy..." 
+                                    placeholder={t.projects.placeholder_notes}
                                     className="bg-white/2 border-white/10 min-h-[180px] text-sm rounded-2xl p-4"
                                     value={reportContent}
                                     onChange={(e) => setReportContent(e.target.value)}
@@ -433,11 +442,11 @@ export default function ProjectsPage() {
                                   <div className="grid grid-cols-2 gap-4">
                                     <div className="aspect-square w-full rounded-2xl bg-white/2 border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent/40 transition-colors">
                                       <Camera className="h-6 w-6" />
-                                      <span className="text-[9px] font-bold uppercase tracking-tighter">FOTO OBRA</span>
+                                      <span className="text-[9px] font-bold uppercase tracking-tighter">{t.projects.photo_work}</span>
                                     </div>
                                     <div className="aspect-square w-full rounded-2xl bg-white/2 border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent/40 transition-colors">
                                       <Camera className="h-6 w-6" />
-                                      <span className="text-[9px] font-bold uppercase tracking-tighter">FOTO MATERIAL</span>
+                                      <span className="text-[9px] font-bold uppercase tracking-tighter">{t.projects.photo_material}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -447,7 +456,7 @@ export default function ProjectsPage() {
                                   disabled={!reportContent || loading}
                                   onClick={() => handleFinishDayAndReport(project)}
                                 >
-                                  {loading ? "Enviando..." : "FINALIZAR JORNADA"}
+                                  {loading ? t.common.loading : t.projects.confirm_finish}
                                 </Button>
                               </div>
                             )}
@@ -465,9 +474,9 @@ export default function ProjectsPage() {
             <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
               <Briefcase className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-bold text-white uppercase tracking-tighter">Sin proyectos asignados</h3>
+            <h3 className="text-lg font-bold text-white uppercase tracking-tighter">{t.common.no_results}</h3>
             <p className="text-sm text-muted-foreground mt-2 max-w-xs">
-              {isAdmin ? "No hay obras registradas en el sistema." : "No tienes obras asignadas para hoy."}
+              {isAdmin ? t.common.no_results : t.common.no_results}
             </p>
           </div>
         )}
