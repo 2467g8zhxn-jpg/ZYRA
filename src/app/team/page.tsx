@@ -94,18 +94,6 @@ export default function TeamPage() {
     );
   }, [teams, searchTerm]);
 
-  const createNotification = async (userId: string, title: string, message: string, type: string) => {
-    if (!db) return;
-    await addDoc(collection(db, "notifications"), {
-      userId,
-      title,
-      message,
-      type,
-      read: false,
-      createdAt: new Date().toISOString()
-    });
-  };
-
   const handleCreateTeam = async () => {
     if (!db) return;
     setLoading(true);
@@ -116,18 +104,7 @@ export default function TeamPage() {
     };
 
     try {
-      const teamRef = await addDoc(colRef, data);
-      
-      // Notify members
-      for (const memberId of newTeam.members) {
-        await createNotification(
-          memberId,
-          "¡Nuevo Equipo!",
-          `Has sido asignado a la cuadrilla: ${newTeam.name}`,
-          "team"
-        );
-      }
-
+      await addDoc(colRef, data);
       toast({ title: "Equipo Creado", description: `El equipo ${newTeam.name} ha sido registrado.` });
       setIsCreateDialogOpen(false);
       setNewTeam({ name: "", leaderId: "", leaderName: "", members: [], type: "Instalación", status: "Disponible" });
@@ -142,7 +119,15 @@ export default function TeamPage() {
     }
   };
 
-  // ... Rest of functions remain similar but can add notifications to handleReassignLeader
+  const handleToggleMember = (empId: string) => {
+    setNewTeam(prev => ({
+      ...prev,
+      members: prev.members.includes(empId)
+        ? prev.members.filter(id => id !== empId)
+        : [...prev.members, empId]
+    }));
+  };
+
   const handleReassignLeader = async (teamId: string, newLeaderId: string) => {
     if (!db) return;
     const teamRef = doc(db, "teams", teamId);
@@ -154,12 +139,6 @@ export default function TeamPage() {
 
     try {
       await setDoc(teamRef, updateData, { merge: true });
-      await createNotification(
-        newLeaderId,
-        "Liderazgo Asignado",
-        `Has sido nombrado líder de ${selectedTeam?.name}`,
-        "team"
-      );
       toast({ title: "Líder Reasignado", description: "El equipo ahora tiene un nuevo supervisor." });
       setIsReassignDialogOpen(false);
     } catch (err: any) {
@@ -171,7 +150,6 @@ export default function TeamPage() {
     }
   };
 
-  // ... JSX remains the same
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-8 font-body">

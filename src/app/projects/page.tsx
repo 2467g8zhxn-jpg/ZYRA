@@ -96,42 +96,17 @@ export default function ProjectsPage() {
   const { data: firestoreProjects, isLoading: projectsLoading } = useCollection(projectsQuery);
   const { data: teams } = useCollection(teamsQuery);
 
-  const createNotification = async (userId: string, title: string, message: string, type: string) => {
-    if (!db) return;
-    await addDoc(collection(db, "notifications"), {
-      userId,
-      title,
-      message,
-      type,
-      read: false,
-      createdAt: new Date().toISOString()
-    });
-  };
-
   const handleCreateProject = async () => {
     if (!db) return;
     setLoading(true);
     try {
-      const projRef = await addDoc(collection(db, "proyectos"), {
+      await addDoc(collection(db, "proyectos"), {
         ...newProject,
         Pry_Estado: "Pendiente",
         progreso: 0,
         assignedTeamId: newProject.Eq_ID,
         fecha_creacion: new Date().toISOString(),
       });
-
-      // Notify team members
-      const selectedTeam = teams?.find(t => t.id === newProject.Eq_ID);
-      if (selectedTeam) {
-        for (const memberId of selectedTeam.members) {
-          await createNotification(
-            memberId,
-            "Proyecto Asignado",
-            `Tu equipo ha sido asignado al proyecto: ${newProject.Pry_Nombre_Proyecto}`,
-            "project"
-          );
-        }
-      }
 
       toast({ title: "¡Éxito!", description: "Proyecto creado correctamente." });
       setIsCreateDialogOpen(false);
@@ -202,15 +177,8 @@ export default function ProjectsPage() {
       const newPoints = currentPoints + 50;
       let newLevel = currentLevel;
       
-      // Basic level up logic
       if (newPoints >= currentLevel * 200) {
         newLevel = currentLevel + 1;
-        await createNotification(
-          user.uid,
-          "¡SUBISTE DE NIVEL!",
-          `Felicidades, ahora eres Nivel ${newLevel}`,
-          "level"
-        );
       }
 
       const userRef = doc(db, "users", user.uid);
@@ -494,11 +462,11 @@ export default function ProjectsPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center px-6 bg-white/2 rounded-3xl border border-dashed border-white/5">
-            <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+            <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
               <Briefcase className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-bold text-white uppercase tracking-tighter">Sin proyectos</h3>
-            <p className="text-xs text-muted-foreground mt-2 max-w-[200px]">
+            <h3 className="text-lg font-bold text-white uppercase tracking-tighter">Sin proyectos asignados</h3>
+            <p className="text-sm text-muted-foreground mt-2 max-w-xs">
               {isAdmin ? "No hay obras registradas en el sistema." : "No tienes obras asignadas para hoy."}
             </p>
           </div>

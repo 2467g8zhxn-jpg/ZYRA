@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -8,8 +9,8 @@ service cloud.firestore {
     
     function isAdmin() {
       return isSignedIn() && (
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'admin' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'admin') ||
         request.auth.token.email == 'admin@zyra.com'
       );
     }
@@ -18,16 +19,6 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn();
       allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-    }
-
-    // Reglas para Notificaciones
-    match /notifications/{notifId} {
-      // Permitir lectura si el usuario es admin o si el documento le pertenece
-      allow read: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
-      // Permitir creación si el usuario es admin o si se asigna a sí mismo (para logs operativos)
-      allow create: if isSignedIn() && (isAdmin() || request.resource.data.userId == request.auth.uid);
-      allow update: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow delete: if isAdmin();
     }
 
     // Reglas para Proyectos

@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { cn } from "@/lib/utils";
-import { doc, updateDoc, collection, query, where, addDoc } from "firebase/firestore";
+import { doc, updateDoc, collection, query, where } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -98,16 +98,6 @@ export default function ReportsPage() {
 
     try {
       await updateDoc(reportRef, updateData);
-      
-      await addDoc(collection(db, "notifications"), {
-        userId: selectedReport.employeeId,
-        title: `Reporte ${newStatus}`,
-        message: `Tu reporte para ${selectedReport.projectName} ha sido ${newStatus.toLowerCase()}.`,
-        type: "report",
-        read: false,
-        createdAt: new Date().toISOString()
-      });
-
       toast({ title: `Reporte ${newStatus}`, description: `El registro ha sido actualizado.` });
       setSelectedReportId(null);
     } catch (error: any) {

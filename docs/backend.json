@@ -17,22 +17,6 @@
       },
       "required": ["id", "name", "role", "level", "points", "streak"]
     },
-    "Notification": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Notification",
-      "type": "object",
-      "description": "Operational alerts for employees regarding teams, projects, and reports.",
-      "properties": {
-        "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "title": { "type": "string" },
-        "message": { "type": "string" },
-        "type": { "type": "string", "enum": ["team", "project", "report", "level"] },
-        "read": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "title", "message", "type", "read", "createdAt"]
-    },
     "Project": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Project",
@@ -52,10 +36,6 @@
       {
         "path": "/users/{userId}",
         "definition": { "entityName": "User", "schema": { "$ref": "#/backend/entities/User" } }
-      },
-      {
-        "path": "/notifications/{notificationId}",
-        "definition": { "entityName": "Notification", "schema": { "$ref": "#/backend/entities/Notification" } }
       }
     ]
   }
