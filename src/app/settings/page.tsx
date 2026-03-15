@@ -173,7 +173,7 @@ export default function SettingsPage() {
                       <SelectValue placeholder="Seleccionar idioma" />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-white/10 text-white">
-                      <SelectItem value="es">Español (Chile/Latam)</SelectItem>
+                      <SelectItem value="es">Español Latino</SelectItem>
                       <SelectItem value="en">English (US)</SelectItem>
                       <SelectItem value="zh">中文 (Chino Simplificado)</SelectItem>
                     </SelectContent>
