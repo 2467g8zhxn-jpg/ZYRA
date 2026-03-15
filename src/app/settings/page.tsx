@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import DashboardLayout from "../dashboard/layout";
 import { 
   Card, 
@@ -27,60 +27,19 @@ import { Settings, Moon, Sun, Languages, Type, Palette, Save, Globe } from "luci
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { useTheme } from "@/components/providers/theme-provider";
 import { Language } from "@/app/lib/i18n";
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const { language, setLanguage, t } = useI18n();
+  const { darkMode, setDarkMode, themeColor, setThemeColor, fontSize, setFontSize } = useTheme();
   const [loading, setLoading] = useState(false);
-
-  // Appearance states
-  const [darkMode, setDarkMode] = useState(true);
-  const [fontSize, setFontSize] = useState([14]);
-  const [themeColor, setThemeColor] = useState("zyra");
-
-  // Load existing settings on mount (except language which is managed by I18nProvider)
-  useEffect(() => {
-    const saved = localStorage.getItem('zyra-settings');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.darkMode !== undefined) setDarkMode(parsed.darkMode);
-        if (parsed.fontSize) setFontSize(parsed.fontSize);
-        if (parsed.themeColor) setThemeColor(parsed.themeColor);
-      } catch (e) {
-        console.error("Error loading settings", e);
-      }
-    }
-  }, []);
-
-  // Theme effect
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
-
-  // Color scheme effect
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', themeColor);
-  }, [themeColor]);
-
-  // Font size effect
-  useEffect(() => {
-    document.documentElement.style.setProperty('--base-font-size', `${fontSize[0]}px`);
-  }, [fontSize]);
 
   const handleSaveSettings = () => {
     setLoading(true);
-    localStorage.setItem('zyra-settings', JSON.stringify({
-      darkMode,
-      fontSize,
-      themeColor
-    }));
-    
+    // Settings are automatically saved by the ThemeProvider effect
+    // We just show a visual confirmation here
     setTimeout(() => {
       setLoading(false);
       toast({
@@ -208,12 +167,12 @@ export default function SettingsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs uppercase font-bold text-muted-foreground tracking-widest">{t.settings.font_size}</Label>
-                    <span className="text-sm font-bold text-accent">{fontSize[0]}px</span>
+                    <span className="text-sm font-bold text-accent">{fontSize}px</span>
                   </div>
                   <div className="px-2">
                     <Slider
-                      value={fontSize}
-                      onValueChange={setFontSize}
+                      value={[fontSize]}
+                      onValueChange={(vals) => setFontSize(vals[0])}
                       max={20}
                       min={12}
                       step={1}
@@ -224,7 +183,7 @@ export default function SettingsPage() {
 
                 <div className="p-6 rounded-2xl bg-white/2 border border-white/5">
                   <p className="text-muted-foreground mb-4 text-xs italic">{t.settings.preview}</p>
-                  <p style={{ fontSize: `${fontSize[0]}px` }} className="text-white leading-relaxed">
+                  <p style={{ fontSize: `${fontSize}px` }} className="text-white leading-relaxed">
                     {t.settings.preview_txt}
                   </p>
                 </div>
