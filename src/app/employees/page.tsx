@@ -64,7 +64,7 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(false);
   
   const [showCredentials, setShowCredentials] = useState(false);
-  const [generatedCreds, setGeneratedCreds] = useState({ email: "", password: "" });
+  const [generatedCreds, setGeneratedCreds] = useState({ email: "", password: "", personalEmail: "" });
 
   const [newEmployee, setNewEmployee] = useState({
     Emp_Nombre: "",
@@ -88,7 +88,7 @@ export default function EmployeesPage() {
   }, [employees, searchTerm]);
 
   const handleCreateEmployee = async () => {
-    if (!db || !newEmployee.Emp_Nombre) return;
+    if (!db || !newEmployee.Emp_Nombre || !newEmployee.Emp_CorreoPersonal) return;
     setLoading(true);
     
     const cleanInput = newEmployee.Emp_Nombre.trim().toLowerCase()
@@ -113,9 +113,10 @@ export default function EmployeesPage() {
       secondaryApp = initializeApp(firebaseConfig, "secondary-registration");
       const secondaryAuth = getAuth(secondaryApp);
       
+      // We use the personal email for Auth because the generated @zyra.com one doesn't have an inbox for resets
       const userCredential = await createUserWithEmailAndPassword(
         secondaryAuth, 
-        generatedEmail, 
+        newEmployee.Emp_CorreoPersonal, 
         generatedPassword
       );
       
@@ -127,7 +128,7 @@ export default function EmployeesPage() {
         nombre: newEmployee.Emp_Nombre,
         emailPersonal: newEmployee.Emp_CorreoPersonal,
         emailAcceso: generatedEmail,
-        email: generatedEmail,
+        email: newEmployee.Emp_CorreoPersonal, // Real email used for login and recovery
         telefono: newEmployee.Emp_Telefono,
         rol: "employee",
         nivel: 1,
@@ -137,7 +138,11 @@ export default function EmployeesPage() {
         createdAt: serverTimestamp(),
       });
 
-      setGeneratedCreds({ email: generatedEmail, password: generatedPassword });
+      setGeneratedCreds({ 
+        email: generatedEmail, 
+        password: generatedPassword,
+        personalEmail: newEmployee.Emp_CorreoPersonal
+      });
       setShowCredentials(true);
       
       toast({ 
@@ -313,12 +318,13 @@ export default function EmployeesPage() {
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">EMAIL DE ACCESO ZYRA</Label>
                       <div className="flex gap-2">
-                        <Input readOnly value={generatedCreds.email || ""} className="bg-muted/50 border-border font-mono text-sm text-foreground" />
-                        <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.email)}><Copy className="h-4 w-4" /></Button>
+                        <Input readOnly value={generatedCreds.personalEmail || ""} className="bg-muted/50 border-border font-mono text-sm text-foreground" />
+                        <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.personalEmail)}><Copy className="h-4 w-4" /></Button>
                       </div>
+                      <p className="text-[9px] text-muted-foreground">Nota: El empleado usará su correo personal para el primer acceso.</p>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">PASSWORD</Label>
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">PASSWORD TEMPORAL</Label>
                       <div className="flex gap-2">
                         <Input readOnly value={generatedCreds.password || ""} className="bg-muted/50 border-border font-mono text-sm text-accent" />
                         <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.password)}><Copy className="h-4 w-4" /></Button>
@@ -484,10 +490,10 @@ export default function EmployeesPage() {
                         <span className="font-medium truncate">{selectedEmployee.emailAcceso || selectedEmployee.email || "N/A"}</span>
                       </div>
                     </div>
-                    {selectedEmployee.emailAcceso && (
+                    {selectedEmployee.emailPersonal && (
                       <button 
                         className="text-[9px] text-accent font-bold uppercase tracking-tighter ml-1 mt-1 hover:underline flex items-center gap-1"
-                        onClick={() => handleResetPassword(selectedEmployee.emailAcceso)}
+                        onClick={() => handleResetPassword(selectedEmployee.emailPersonal)}
                       >
                         <RotateCcw className="h-3 w-3" /> Restablecer contraseña
                       </button>
