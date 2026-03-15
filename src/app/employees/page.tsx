@@ -45,7 +45,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Users, Plus, Search, Mail, ShieldCheck, UserCircle, Star, Lock, Copy, Loader2, Trash2, Zap, Phone } from "lucide-react";
+import { Users, Plus, Search, Mail, ShieldCheck, UserCircle, Star, Lock, Copy, Loader2, Trash2, Zap, Phone, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/components/providers/i18n-provider";
 
@@ -462,21 +462,67 @@ export default function EmployeesPage() {
                     <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Email de Acceso ZYRA</Label>
                     <div className="flex items-center gap-3 text-sm text-foreground bg-muted/20 p-3 rounded-xl border border-border/50">
                       <Mail className="h-4 w-4 text-accent" /> 
-                      <span className="font-medium">{selectedEmployee.emailAcceso || selectedEmployee.email || "N/A"}</span>
+                      <span className="font-medium truncate">{selectedEmployee.emailAcceso || selectedEmployee.email || "N/A"}</span>
                     </div>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Email Personal</Label>
-                    <div className="flex items-center gap-3 text-sm text-foreground bg-muted/20 p-3 rounded-xl border border-border/50">
-                      <Mail className="h-4 w-4 text-muted-foreground" /> 
-                      <span className="font-medium">{selectedEmployee.emailPersonal || "N/A"}</span>
+                    <div className="flex items-center justify-between gap-3 text-sm text-foreground bg-muted/20 p-3 rounded-xl border border-border/50">
+                      <div className="flex items-center gap-3 truncate">
+                        <Mail className="h-4 w-4 text-muted-foreground" /> 
+                        <span className="font-medium truncate">{selectedEmployee.emailPersonal || "N/A"}</span>
+                      </div>
+                      {selectedEmployee.emailPersonal && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-accent hover:bg-accent/10"
+                          asChild
+                        >
+                          <a href={`mailto:${selectedEmployee.emailPersonal}`}>
+                            <Mail className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Teléfono de Contacto</Label>
-                    <div className="flex items-center gap-3 text-sm text-foreground bg-muted/20 p-3 rounded-xl border border-border/50">
-                      <Phone className="h-4 w-4 text-accent" /> 
-                      <span className="font-medium">{selectedEmployee.telefono || "N/A"}</span>
+                    <div className="flex items-center justify-between gap-3 text-sm text-foreground bg-muted/20 p-3 rounded-xl border border-border/50">
+                      <div className="flex items-center gap-3 truncate">
+                        <Phone className="h-4 w-4 text-accent" /> 
+                        <span className="font-medium truncate">{selectedEmployee.telefono || "N/A"}</span>
+                      </div>
+                      {selectedEmployee.telefono && (
+                        <div className="flex gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-emerald-500 hover:bg-emerald-500/10"
+                            title="WhatsApp"
+                            asChild
+                          >
+                            <a 
+                              href={`https://wa.me/${selectedEmployee.telefono.replace(/\D/g, '')}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </a>
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-accent hover:bg-accent/10"
+                            title="Llamar"
+                            asChild
+                          >
+                            <a href={`tel:${selectedEmployee.telefono.replace(/\D/g, '')}`}>
+                              <Phone className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
