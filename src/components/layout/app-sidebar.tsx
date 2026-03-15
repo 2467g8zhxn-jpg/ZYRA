@@ -7,11 +7,15 @@ import {
   Briefcase, 
   Users, 
   ClipboardList, 
+  Building2,
+  Package,
   Settings, 
   LogOut,
-  Zap
+  Zap,
+  UserCircle,
+  ArrowLeftRight
 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -24,19 +28,23 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useUser } from "@/firebase";
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
+  const { profile, toggleRole } = useUser();
+  const isAdmin = profile?.rol === 'admin';
 
-  // Datos mock para el perfil
-  const profile = {
-    nombre: "Operador Zyra",
-    rol: "employee"
-  };
-
-  const navItems = [
+  const navItems = isAdmin ? [
+    { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+    { title: "Proyectos", icon: Briefcase, href: "/projects" },
+    { title: "Clientes", icon: Building2, href: "/clients" },
+    { title: "Equipos", icon: Users, href: "/team" },
+    { title: "Empleados", icon: UserCircle, href: "/employees" },
+    { title: "Reportes", icon: ClipboardList, href: "/reports" },
+    { title: "Materiales", icon: Package, href: "/materials" },
+  ] : [
     { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { title: "Proyectos", icon: Briefcase, href: "/projects" },
     { title: "Equipo", icon: Users, href: "/team" },
@@ -57,7 +65,9 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-muted-foreground">General</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground">
+            {isAdmin ? "Panel de Administración" : "General"}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -82,13 +92,22 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-white/5 p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center gap-3 px-2 py-2 mb-2 group-data-[collapsible=icon]:hidden">
+            <button 
+              onClick={toggleRole}
+              className="flex items-center gap-3 px-2 py-2 mb-4 w-full text-xs text-muted-foreground hover:text-accent transition-colors group-data-[collapsible=icon]:hidden"
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+              <span>Cambiar a {isAdmin ? "Empleado" : "Admin"}</span>
+            </button>
+            <div className="flex items-center gap-3 px-2 py-2 group-data-[collapsible=icon]:hidden">
               <Avatar className="h-9 w-9 border-2 border-accent">
-                <AvatarFallback className="bg-muted text-xs">OZ</AvatarFallback>
+                <AvatarFallback className="bg-muted text-xs">
+                  {isAdmin ? "AD" : "OZ"}
+                </AvatarFallback>
               </Avatar>
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-semibold truncate text-white">{profile.nombre}</span>
-                <span className="text-xs text-muted-foreground truncate uppercase">{profile.rol}</span>
+                <span className="text-sm font-semibold truncate text-white">{profile?.nombre}</span>
+                <span className="text-[10px] text-muted-foreground truncate uppercase font-bold tracking-widest">{profile?.rol}</span>
               </div>
             </div>
           </SidebarMenuItem>

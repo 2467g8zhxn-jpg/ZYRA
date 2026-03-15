@@ -10,14 +10,42 @@ export function useUser() {
   const auth = useAuth();
   const db = useFirestore();
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>({
-    nombre: "Operador Zyra (Demo)",
-    rol: "employee",
-    nivel: 5,
-    puntos: 1250,
-    racha: 7,
-    logros: ["Pionero", "Reporte Maestro"]
+  
+  // Perfil inicial con soporte para alternar roles en modo demo
+  const [profile, setProfile] = useState<any | null>(() => {
+    if (typeof window !== 'undefined') {
+      const savedRole = localStorage.getItem('zyra-demo-role');
+      if (savedRole === 'admin') {
+        return {
+          nombre: "Administrador Zyra",
+          rol: "admin",
+          puntos: 5000,
+          nivel: 25,
+          racha: 45
+        };
+      }
+    }
+    return {
+      nombre: "Operador Zyra",
+      rol: "employee",
+      nivel: 5,
+      puntos: 1250,
+      racha: 7,
+      logros: [
+        { id: "1", nombre: "Pionero", completado: true },
+        { id: "2", nombre: "Reporte Maestro", completado: true },
+        { id: "3", nombre: "Racha 30 Días", completado: false },
+        { id: "4", nombre: "Experto en Inversores", completado: false },
+      ]
+    };
   });
+
+  const toggleRole = () => {
+    const newRole = profile?.rol === 'admin' ? 'employee' : 'admin';
+    localStorage.setItem('zyra-demo-role', newRole);
+    window.location.reload(); // Recarga simple para aplicar cambios de rol en demo
+  };
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -26,7 +54,6 @@ export function useUser() {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (!currentUser) {
-        // En modo demo mantenemos el perfil mock
         setLoading(false);
       }
     });
@@ -49,5 +76,5 @@ export function useUser() {
     }
   }, [user, db]);
 
-  return { user, profile, loading };
+  return { user, profile, loading, toggleRole };
 }
