@@ -249,9 +249,19 @@ export default function MaterialsPage() {
         </div>
 
         <Tabs defaultValue="inventory" className="w-full">
-          <TabsList className="bg-muted p-1 mb-6">
-            <TabsTrigger value="inventory" className="gap-2 text-xs font-bold uppercase tracking-tighter"><Package className="h-4 w-4" /> {t.materials.general_catalog}</TabsTrigger>
-            <TabsTrigger value="templates" className="gap-2 text-xs font-bold uppercase tracking-tighter"><Settings2 className="h-4 w-4" /> {t.materials.templates}</TabsTrigger>
+          <TabsList className="bg-muted p-1 mb-8 h-12 w-full max-w-lg">
+            <TabsTrigger 
+              value="inventory" 
+              className="flex-1 h-10 gap-2 text-xs font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <Package className="h-4 w-4" /> {t.materials.general_catalog}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="templates" 
+              className="flex-1 h-10 gap-2 text-xs font-bold uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:text-foreground"
+            >
+              <Settings2 className="h-4 w-4" /> {t.materials.templates}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="inventory" className="mt-0">
