@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -64,7 +65,7 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(false);
   
   const [showCredentials, setShowCredentials] = useState(false);
-  const [generatedCreds, setGeneratedCreds] = useState({ email: "", password: "", personalEmail: "" });
+  const [generatedCreds, setGeneratedCreds] = useState({ zyraEmail: "", password: "", personalEmail: "" });
 
   const [newEmployee, setNewEmployee] = useState({
     Emp_Nombre: "",
@@ -82,7 +83,7 @@ export default function EmployeesPage() {
   const filteredEmployees = useMemo(() => {
     if (!employees) return [];
     return employees.filter(e => 
-      (e.Emp_Nombre || e.nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (e.nombre || e.Emp_Nombre || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (e.emailAcceso || e.email || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [employees, searchTerm]);
@@ -91,21 +92,16 @@ export default function EmployeesPage() {
     if (!db || !newEmployee.Emp_Nombre || !newEmployee.Emp_CorreoPersonal) return;
     setLoading(true);
     
+    // Generación de correo: primer letra del nombre + primer apellido + @zyra.com
     const cleanInput = newEmployee.Emp_Nombre.trim().toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
     
     const parts = cleanInput.split(/\s+/);
     const firstInitial = parts[0].charAt(0);
-    
-    let lastName = "";
-    if (parts.length >= 2) {
-      lastName = parts[1];
-    } else {
-      lastName = parts[0];
-    }
+    const lastName = parts.length >= 2 ? parts[1] : parts[0];
 
-    const generatedEmail = `${firstInitial}${lastName}@zyra.com`;
+    const generatedZyraEmail = `${firstInitial}${lastName}@zyra.com`;
     const generatedPassword = Math.random().toString(36).slice(-8) + "!";
 
     let secondaryApp;
@@ -113,7 +109,7 @@ export default function EmployeesPage() {
       secondaryApp = initializeApp(firebaseConfig, "secondary-registration");
       const secondaryAuth = getAuth(secondaryApp);
       
-      // We use the personal email for Auth because the generated @zyra.com one doesn't have an inbox for resets
+      // Creamos la cuenta en Auth usando el correo PERSONAL para permitir recuperación de contraseña real
       const userCredential = await createUserWithEmailAndPassword(
         secondaryAuth, 
         newEmployee.Emp_CorreoPersonal, 
@@ -122,13 +118,14 @@ export default function EmployeesPage() {
       
       const uid = userCredential.user.uid;
 
+      // Guardamos la información en Firestore, vinculando el ID con el correo corporativo generado
       const userRef = doc(db, "users", uid);
       await setDoc(userRef, {
         uid: uid,
         nombre: newEmployee.Emp_Nombre,
         emailPersonal: newEmployee.Emp_CorreoPersonal,
-        emailAcceso: generatedEmail,
-        email: newEmployee.Emp_CorreoPersonal, // Real email used for login and recovery
+        emailAcceso: generatedZyraEmail,
+        email: newEmployee.Emp_CorreoPersonal, // El correo de login sigue siendo el personal por seguridad/recuperación
         telefono: newEmployee.Emp_Telefono,
         rol: "employee",
         nivel: 1,
@@ -139,7 +136,7 @@ export default function EmployeesPage() {
       });
 
       setGeneratedCreds({ 
-        email: generatedEmail, 
+        zyraEmail: generatedZyraEmail, 
         password: generatedPassword,
         personalEmail: newEmployee.Emp_CorreoPersonal
       });
@@ -192,7 +189,7 @@ export default function EmployeesPage() {
       await sendPasswordResetEmail(auth, email);
       toast({ 
         title: t.common.success, 
-        description: "Se ha enviado un correo para restablecer la contraseña a: " + email
+        description: "Enlace enviado al correo personal: " + email
       });
     } catch (e: any) {
       toast({ 
@@ -318,10 +315,10 @@ export default function EmployeesPage() {
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">EMAIL DE ACCESO ZYRA</Label>
                       <div className="flex gap-2">
-                        <Input readOnly value={generatedCreds.personalEmail || ""} className="bg-muted/50 border-border font-mono text-sm text-foreground" />
-                        <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.personalEmail)}><Copy className="h-4 w-4" /></Button>
+                        <Input readOnly value={generatedCreds.zyraEmail || ""} className="bg-muted/50 border-border font-mono text-sm text-foreground" />
+                        <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.zyraEmail)}><Copy className="h-4 w-4" /></Button>
                       </div>
-                      <p className="text-[9px] text-muted-foreground">Nota: El empleado usará su correo personal para el primer acceso.</p>
+                      <p className="text-[9px] text-muted-foreground">Nota: Utilice su correo personal para iniciar sesión y recuperar acceso.</p>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">PASSWORD TEMPORAL</Label>
@@ -332,7 +329,7 @@ export default function EmployeesPage() {
                     </div>
                     <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-md">
                       <p className="text-[10px] text-yellow-500 uppercase font-bold tracking-tighter flex items-center gap-2">
-                        <Lock className="h-3 w-3" /> SECURITY: PASSWORD SHOWN ONLY ONCE
+                        <Lock className="h-3 w-3" /> SEGURIDAD: COPIE ESTOS DATOS AHORA
                       </p>
                     </div>
                   </div>
@@ -387,7 +384,7 @@ export default function EmployeesPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 text-xs text-foreground"><Mail className="h-3 w-3 text-accent" /> {emp.emailAcceso || emp.email || "N/A"}</div>
+                        <div className="flex items-center gap-2 text-xs text-foreground"><Mail className="h-3 w-3 text-accent" /> {emp.emailAcceso || "N/A"}</div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-4">
@@ -487,7 +484,7 @@ export default function EmployeesPage() {
                     <div className="flex items-center justify-between gap-3 text-sm text-foreground bg-muted/20 p-3 rounded-xl border border-border/50">
                       <div className="flex items-center gap-3 truncate">
                         <Mail className="h-4 w-4 text-accent" /> 
-                        <span className="font-medium truncate">{selectedEmployee.emailAcceso || selectedEmployee.email || "N/A"}</span>
+                        <span className="font-medium truncate">{selectedEmployee.emailAcceso || "N/A"}</span>
                       </div>
                     </div>
                     {selectedEmployee.emailPersonal && (
