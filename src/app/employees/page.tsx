@@ -74,12 +74,29 @@ export default function EmployeesPage() {
   }, [employees, searchTerm]);
 
   const handleCreateEmployee = async () => {
-    if (!db) return;
+    if (!db || !newEmployee.Emp_Nombre) return;
     setLoading(true);
     
-    const baseId = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    const cleanName = newEmployee.Emp_Nombre.toLowerCase().split(' ')[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const generatedEmail = `${cleanName}.${baseId}@zyracommand.com`;
+    // Nueva lógica de generación de email: primera letra del nombre + primer apellido @zyra.com
+    const cleanInput = newEmployee.Emp_Nombre.trim().toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, ""); // Quitar acentos
+    
+    const parts = cleanInput.split(/\s+/);
+    const firstInitial = parts[0].charAt(0);
+    
+    let lastName = "";
+    if (parts.length >= 4) {
+      // Caso: José Luis Valdez Soto -> "j" + "valdez"
+      lastName = parts[2];
+    } else if (parts.length >= 2) {
+      // Caso: José Valdez -> "j" + "valdez" o José Valdez Soto -> "j" + "valdez"
+      lastName = parts[1];
+    } else {
+      lastName = parts[0];
+    }
+
+    const generatedEmail = `${firstInitial}${lastName}@zyra.com`;
     const generatedPassword = Math.random().toString(36).slice(-8) + "!";
 
     let secondaryApp;
@@ -196,7 +213,7 @@ export default function EmployeesPage() {
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name" className="text-xs uppercase font-bold text-muted-foreground">{t.employees.full_name}</Label>
+                      <Label htmlFor="name" className="text-xs uppercase font-bold text-muted-foreground">Nombre</Label>
                       <Input 
                         id="name" 
                         placeholder="Nombre completo del empleado" 
@@ -207,7 +224,7 @@ export default function EmployeesPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label className="text-xs uppercase font-bold text-muted-foreground">{t.employees.personal_email}</Label>
+                        <Label className="text-xs uppercase font-bold text-muted-foreground">E-mail</Label>
                         <Input 
                           type="email"
                           placeholder="correo@ejemplo.com" 
@@ -217,7 +234,7 @@ export default function EmployeesPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs uppercase font-bold text-muted-foreground">{t.employees.phone}</Label>
+                        <Label className="text-xs uppercase font-bold text-muted-foreground">Teléfono</Label>
                         <Input 
                           placeholder="+52 000 000 0000" 
                           className="bg-muted/50 border-border text-foreground"
@@ -246,7 +263,7 @@ export default function EmployeesPage() {
                   </DialogHeader>
                   <div className="py-6 space-y-4">
                     <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t.employees.access_email}</Label>
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">EMAIL DE ACCESO ZYRA</Label>
                       <div className="flex gap-2">
                         <Input readOnly value={generatedCreds.email} className="bg-muted/50 border-border font-mono text-sm text-foreground" />
                         <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.email)}><Copy className="h-4 w-4" /></Button>
