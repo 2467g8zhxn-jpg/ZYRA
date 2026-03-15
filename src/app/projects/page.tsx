@@ -1,4 +1,3 @@
-
 "use client";
 
 import DashboardLayout from "../dashboard/layout";
@@ -14,7 +13,8 @@ import {
   Sparkles,
   Camera,
   Loader2,
-  FileText
+  FileText,
+  Briefcase
 } from "lucide-react";
 import Image from "next/image";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -54,6 +54,7 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(false);
   const [isAiDrafting, setIsAiDrafting] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
   const [newProject, setNewProject] = useState({
     Pry_Nombre_Proyecto: "",
     Cl_ID: "",
@@ -96,7 +97,6 @@ export default function ProjectsPage() {
     }
     
     // If no teams found for employee, we return a query that will return nothing
-    // instead of returning null (which would show the fallback/loading)
     if (myTeams && myTeams.length === 0) {
       return query(collection(db, "proyectos"), where("assignedTeamId", "==", "no-team-found"));
     }
@@ -203,7 +203,7 @@ export default function ProjectsPage() {
             ultimo_reporte: new Date().toISOString()
           }
         },
-        puntos: (profile?.puntos || 0) + 50 // Reward for reporting
+        puntos: (profile?.puntos || 0) + 50 
       }, { merge: true });
 
       toast({ title: "Reporte Enviado", description: "Has finalizado tu jornada con éxito. +50 pts." });
@@ -503,10 +503,4 @@ export default function ProjectsPage() {
       </div>
     </DashboardLayout>
   );
-}
-
-// Helper to keep track of selected project in sheet
-function useProjectState() {
-  const [selectedProject, setSelectedProject] = useState<any>(null);
-  return { selectedProject, setSelectedProject };
 }
