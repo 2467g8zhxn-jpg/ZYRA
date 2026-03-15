@@ -25,7 +25,7 @@ export default function ReportsPage() {
     setIsMounted(true);
   }, []);
 
-  // Historial de reportes del empleado (Demo) con URLs de evidencia
+  // Historial de reportes del empleado (Demo) con URLs de evidencia vinculadas
   const myReports = [
     { 
       id: "1", 
@@ -33,7 +33,7 @@ export default function ReportsPage() {
       contenido: "Finalizada la conexión de los inversores en el bloque B. Se realizaron pruebas de tensión satisfactorias.", 
       proyecto: "Residencial Las Palmas",
       highlights: ["Inversores conectados", "Pruebas de tensión OK"],
-      imageUrl: PlaceHolderImages.find(img => img.id === "evidencia-inversores")?.imageUrl,
+      imageUrl: PlaceHolderImages.find(img => img.id === "evidencia-inversores")?.imageUrl || "https://picsum.photos/seed/solar-inv/800/450",
       imageHint: "solar inverter"
     },
     { 
@@ -42,7 +42,7 @@ export default function ReportsPage() {
       contenido: "Montaje de estructura de soporte para paneles en techumbre norte completado al 100%.", 
       proyecto: "Residencial Las Palmas",
       highlights: ["Estructura completada", "Fase 1 terminada"],
-      imageUrl: PlaceHolderImages.find(img => img.id === "evidencia-paneles")?.imageUrl,
+      imageUrl: PlaceHolderImages.find(img => img.id === "evidencia-paneles")?.imageUrl || "https://picsum.photos/seed/solar-pan/800/450",
       imageHint: "solar panels"
     },
     { 
@@ -51,7 +51,7 @@ export default function ReportsPage() {
       contenido: "Revisión de cableado AC en el sector C. Se detectó una falla en el térmico principal.", 
       proyecto: "Bodega Logística Norte",
       highlights: ["Revisión AC", "Falla detectada"],
-      imageUrl: PlaceHolderImages.find(img => img.id === "evidencia-falla")?.imageUrl,
+      imageUrl: PlaceHolderImages.find(img => img.id === "evidencia-falla")?.imageUrl || "https://picsum.photos/seed/solar-fail/800/450",
       imageHint: "electrical cables"
     }
   ];
@@ -107,7 +107,7 @@ export default function ReportsPage() {
                     <div className="grid md:grid-cols-3 gap-6">
                       <div className="md:col-span-2 space-y-4">
                         <div className="bg-white/5 p-4 rounded-lg border border-white/5">
-                          <p className="text-sm text-white leading-relaxed">
+                          <p className="text-sm text-white leading-relaxed italic">
                             "{report.contenido}"
                           </p>
                         </div>
@@ -123,20 +123,18 @@ export default function ReportsPage() {
                         )}
                       </div>
 
-                      {report.imageUrl && (
-                        <div className="relative group aspect-video md:aspect-square w-full rounded-lg border border-white/10 overflow-hidden shadow-lg">
-                          <Image
-                            src={report.imageUrl}
-                            alt={`Evidencia de ${report.proyecto}`}
-                            fill
-                            className="object-cover transition-transform group-hover:scale-110"
-                            data-ai-hint={report.imageHint}
-                          />
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <ImageIcon className="h-6 w-6 text-white" />
-                          </div>
+                      <div className="relative group aspect-video md:aspect-square w-full rounded-lg border border-white/10 overflow-hidden shadow-lg">
+                        <Image
+                          src={report.imageUrl}
+                          alt={`Evidencia de ${report.proyecto}`}
+                          fill
+                          className="object-cover transition-transform group-hover:scale-110"
+                          data-ai-hint={report.imageHint}
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <ImageIcon className="h-6 w-6 text-white" />
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-4 pt-2">

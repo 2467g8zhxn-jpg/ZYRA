@@ -1,9 +1,10 @@
+
 "use client";
 
 import DashboardLayout from "../dashboard/layout";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, ArrowRight, Activity, ImageIcon } from "lucide-react";
+import { MapPin, ArrowRight, Activity } from "lucide-react";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 
@@ -16,7 +17,7 @@ const PROJECTS = [
     descripcion: "Instalación de 45 paneles solares de 450W en área común.",
     ubicacion: "Av. Las Palmas 450, Santiago",
     progreso: 65,
-    imageUrl: PlaceHolderImages.find(img => img.id === "evidencia-paneles")?.imageUrl,
+    imageUrl: PlaceHolderImages.find(img => img.id === "evidencia-paneles")?.imageUrl || "https://picsum.photos/seed/1/800/450",
     imageHint: "solar panels"
   },
   {
@@ -27,7 +28,7 @@ const PROJECTS = [
     descripcion: "Configuración de sistema de respaldo de energía con baterías Litio-Ion.",
     ubicacion: "Panamericana Norte Km 22, Colina",
     progreso: 92,
-    imageUrl: PlaceHolderImages.find(img => img.id === "evidencia-inversores")?.imageUrl,
+    imageUrl: PlaceHolderImages.find(img => img.id === "evidencia-inversores")?.imageUrl || "https://picsum.photos/seed/2/800/450",
     imageHint: "solar inverter"
   }
 ];
@@ -49,25 +50,23 @@ export default function ProjectsPage() {
         <div className="grid gap-6 md:grid-cols-2">
           {PROJECTS.map((project) => (
             <Card key={project.id} className="bg-card border-white/5 hover:border-accent/30 transition-all group overflow-hidden flex flex-col">
-              {project.imageUrl && (
-                <div className="relative h-48 w-full overflow-hidden border-b border-white/5">
-                  <Image
-                    src={project.imageUrl}
-                    alt={project.nombre}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    data-ai-hint={project.imageHint}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-4 left-4">
-                    <Badge className={
-                      project.estado === 'ejecucion' ? 'bg-primary text-primary-foreground' : 'bg-yellow-500 text-black'
-                    }>
-                      {project.estado.toUpperCase()}
-                    </Badge>
-                  </div>
+              <div className="relative h-56 w-full overflow-hidden border-b border-white/5">
+                <Image
+                  src={project.imageUrl}
+                  alt={project.nombre}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  data-ai-hint={project.imageHint}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4">
+                  <Badge className={
+                    project.estado === 'ejecucion' ? 'bg-primary text-primary-foreground' : 'bg-yellow-500 text-black'
+                  }>
+                    {project.estado.toUpperCase()}
+                  </Badge>
                 </div>
-              )}
+              </div>
               
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start">
