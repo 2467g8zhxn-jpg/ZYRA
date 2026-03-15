@@ -48,6 +48,7 @@ import {
 import { Users, Plus, Search, Mail, ShieldCheck, UserCircle, Star, Lock, Copy, Loader2, Trash2, Zap, Phone, MessageSquare, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { sendResetNotificationAction } from "@/app/actions/email-actions";
 
 export default function EmployeesPage() {
   const { profile, loading: userLoading } = useUser();
@@ -184,18 +185,31 @@ export default function EmployeesPage() {
     
     setLoading(true);
     try {
+      // 1. Disparamos el correo oficial de Firebase (contiene el enlace real)
       if (auth) {
         await sendPasswordResetEmail(auth, emp.emailPersonal);
+      }
+
+      // 2. Enviamos el correo de notificación profesional con tu diseño HTML
+      const emailResult = await sendResetNotificationAction(emp.emailPersonal, emp.nombre || emp.Emp_Nombre);
+      
+      if (emailResult.success) {
         toast({ 
-          title: "Enlace enviado", 
-          description: `Se ha enviado un enlace de recuperación a: ${emp.emailPersonal}` 
+          title: "Proceso completado", 
+          description: `Se ha enviado el enlace de seguridad y la notificación profesional a: ${emp.emailPersonal}` 
+        });
+      } else {
+        // Si el SMTP falla, avisamos pero el de Firebase probablemente sí salió
+        toast({ 
+          title: "Aviso", 
+          description: "Se disparó el enlace oficial, pero el correo de diseño requiere configuración SMTP en el servidor." 
         });
       }
     } catch (e: any) {
       toast({ 
         variant: "destructive", 
-        title: "Aviso", 
-        description: "Hubo un problema al procesar la solicitud de recuperación." 
+        title: "Error", 
+        description: "No se pudo procesar la solicitud de recuperación." 
       });
     } finally {
       setLoading(false);
