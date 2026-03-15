@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
-import { Settings, LogOut, User, Zap, Trophy } from "lucide-react";
+import { Settings, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { useI18n } from "@/components/providers/i18n-provider";
 
@@ -60,18 +60,6 @@ export function UserNav() {
               <span className="text-xs font-bold text-foreground">{t.nav.profile}</span>
             </Link>
           </DropdownMenuItem>
-          {!isAdmin && (
-            <>
-              <DropdownMenuItem className="py-2">
-                <Zap className="mr-2 h-4 w-4 text-accent" />
-                <span className="text-xs font-bold text-foreground">{t.dashboard.level} {profile?.nivel || 1}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="py-2">
-                <Trophy className="mr-2 h-4 w-4 text-accent" />
-                <span className="text-xs font-bold text-foreground">{profile?.puntos || 0} {t.dashboard.points}</span>
-              </DropdownMenuItem>
-            </>
-          )}
           <DropdownMenuItem asChild>
             <Link href="/settings" className="cursor-pointer py-2 flex items-center w-full">
               <Settings className="mr-2 h-4 w-4 text-accent" />
