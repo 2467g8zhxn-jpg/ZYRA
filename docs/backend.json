@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -51,6 +52,20 @@
         "points",
         "streak"
       ]
+    },
+    "Team": {
+      "title": "Team",
+      "type": "object",
+      "description": "Cuadrilla operativa de trabajo.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "leaderId": { "type": "string" },
+        "leaderName": { "type": "string" },
+        "memberCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["Activo", "Disponible"] }
+      },
+      "required": ["name", "leaderId"]
     },
     "Project": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -148,7 +163,7 @@
     },
     "proyectos/{projectId}": {
       "schema": "#/entities/Project",
-      "description": "Proyectos de instalación solar."
+      "description": "Proyectos de installation solar."
     },
     "materiales/{materialId}": {
       "schema": "#/entities/Material",
@@ -161,6 +176,10 @@
     "reports/{reportId}": {
       "schema": "#/entities/Report",
       "description": "Reportes operativos vinculados a proyectos."
+    },
+    "teams/{teamId}": {
+      "schema": "#/entities/Team",
+      "description": "Cuadrillas de trabajo."
     }
   }
 }
