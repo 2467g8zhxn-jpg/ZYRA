@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
@@ -34,13 +33,13 @@ import {
   DialogFooter,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { Users, Plus, Search, Mail, ShieldCheck, UserCircle, Star, Lock, Copy } from "lucide-react";
+import { Users, Plus, Search, Mail, ShieldCheck, UserCircle, Star, Lock, Copy, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/components/providers/i18n-provider";
 
 export default function EmployeesPage() {
-  const { profile } = useUser();
+  const { profile, loading: userLoading } = useUser();
   const db = useFirestore();
   const { toast } = useToast();
   const { t } = useI18n();
@@ -144,6 +143,16 @@ export default function EmployeesPage() {
     toast({ description: t.common.success });
   };
 
+  if (userLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (!isAdmin) {
     return (
       <DashboardLayout>
@@ -160,7 +169,7 @@ export default function EmployeesPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-8 font-body">
+      <div className="max-w-7xl mx-auto space-y-8 font-body text-foreground">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
             <h2 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -178,12 +187,12 @@ export default function EmployeesPage() {
                 <Plus className="h-4 w-4" /> {t.employees.register}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg bg-card border-border">
               {!showCredentials ? (
                 <>
                   <DialogHeader>
                     <DialogTitle className="text-accent">{t.employees.register}</DialogTitle>
-                    <CardDescription>{t.employees.subtitle}</CardDescription>
+                    <CardDescription className="text-muted-foreground">{t.employees.subtitle}</CardDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="space-y-2">
@@ -191,7 +200,7 @@ export default function EmployeesPage() {
                       <Input 
                         id="name" 
                         placeholder="..." 
-                        className="bg-muted/50 border-border"
+                        className="bg-muted/50 border-border text-foreground"
                         value={newEmployee.Emp_Nombre}
                         onChange={(e) => setNewEmployee({...newEmployee, Emp_Nombre: e.target.value})}
                       />
@@ -202,7 +211,7 @@ export default function EmployeesPage() {
                         <Input 
                           type="email"
                           placeholder="..." 
-                          className="bg-muted/50 border-border"
+                          className="bg-muted/50 border-border text-foreground"
                           value={newEmployee.Emp_CorreoPersonal}
                           onChange={(e) => setNewEmployee({...newEmployee, Emp_CorreoPersonal: e.target.value})}
                         />
@@ -211,7 +220,7 @@ export default function EmployeesPage() {
                         <Label className="text-xs uppercase font-bold text-muted-foreground">{t.employees.phone}</Label>
                         <Input 
                           placeholder="+..." 
-                          className="bg-muted/50 border-border"
+                          className="bg-muted/50 border-border text-foreground"
                           value={newEmployee.Emp_Telefono}
                           onChange={(e) => setNewEmployee({...newEmployee, Emp_Telefono: e.target.value})}
                         />
@@ -239,15 +248,15 @@ export default function EmployeesPage() {
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t.employees.access_email}</Label>
                       <div className="flex gap-2">
-                        <Input readOnly value={generatedCreds.email} className="bg-muted/50 border-border font-mono text-sm" />
-                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(generatedCreds.email)}><Copy className="h-4 w-4" /></Button>
+                        <Input readOnly value={generatedCreds.email} className="bg-muted/50 border-border font-mono text-sm text-foreground" />
+                        <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.email)}><Copy className="h-4 w-4" /></Button>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">PASSWORD</Label>
                       <div className="flex gap-2">
                         <Input readOnly value={generatedCreds.password} className="bg-muted/50 border-border font-mono text-sm text-accent" />
-                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(generatedCreds.password)}><Copy className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.password)}><Copy className="h-4 w-4" /></Button>
                       </div>
                     </div>
                     <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-md">
@@ -257,7 +266,7 @@ export default function EmployeesPage() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button className="w-full font-bold" onClick={() => setIsCreateDialogOpen(false)}>
+                    <Button className="w-full font-bold bg-accent hover:bg-accent/90 text-white" onClick={() => setIsCreateDialogOpen(false)}>
                       {t.common.understood}
                     </Button>
                   </DialogFooter>
@@ -267,19 +276,21 @@ export default function EmployeesPage() {
           </Dialog>
         </div>
 
-        <Card className="shadow-2xl overflow-hidden">
-          <CardHeader className="border-b bg-muted/30">
+        <Card className="shadow-2xl overflow-hidden border-border">
+          <CardHeader className="border-b border-border bg-muted/30">
             <div className="flex items-center justify-between">
               <CardTitle className="text-foreground text-lg font-bold">{t.employees.payroll}</CardTitle>
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder={t.common.search} className="pl-10 bg-background border-border text-xs h-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <Input placeholder={t.common.search} className="pl-10 bg-background border-border text-xs h-9 text-foreground" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             {employeesLoading ? (
-              <div className="flex items-center justify-center p-12"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent"></div></div>
+              <div className="flex items-center justify-center p-12">
+                <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              </div>
             ) : filteredEmployees.length > 0 ? (
               <Table>
                 <TableHeader className="bg-muted/10">

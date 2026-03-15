@@ -30,12 +30,12 @@ import {
   DialogFooter,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { Building2, Plus, Search, Mail, Phone, MapPin, User } from "lucide-react";
+import { Building2, Plus, Search, Mail, Phone, MapPin, User, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/components/providers/i18n-provider";
 
 export default function ClientsPage() {
-  const { profile } = useUser();
+  const { profile, loading: userLoading } = useUser();
   const db = useFirestore();
   const { toast } = useToast();
   const { t } = useI18n();
@@ -92,6 +92,16 @@ export default function ClientsPage() {
     }
   };
 
+  if (userLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (!isAdmin) {
     return (
       <DashboardLayout>
@@ -110,7 +120,7 @@ export default function ClientsPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-8 font-body">
+      <div className="max-w-7xl mx-auto space-y-8 font-body text-foreground">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
             <h2 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -125,7 +135,7 @@ export default function ClientsPage() {
                 <Plus className="h-4 w-4" /> {t.clients.register}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg bg-card border-border">
               <DialogHeader>
                 <DialogTitle className="text-accent">{t.clients.register}</DialogTitle>
                 <CardDescription>
@@ -139,7 +149,7 @@ export default function ClientsPage() {
                     <Input 
                       id="name" 
                       placeholder="ZYRA..." 
-                      className="bg-muted/50 border-border"
+                      className="bg-muted/50 border-border text-foreground"
                       value={newClient.Cl_Nombre}
                       onChange={(e) => setNewClient({...newClient, Cl_Nombre: e.target.value})}
                     />
@@ -149,7 +159,7 @@ export default function ClientsPage() {
                     <Input 
                       id="legal" 
                       placeholder="..." 
-                      className="bg-muted/50 border-border"
+                      className="bg-muted/50 border-border text-foreground"
                       value={newClient.Cl_RazonSocial}
                       onChange={(e) => setNewClient({...newClient, Cl_RazonSocial: e.target.value})}
                     />
@@ -161,7 +171,7 @@ export default function ClientsPage() {
                     <Input 
                       type="email"
                       placeholder="email@company.com" 
-                      className="bg-muted/50 border-border"
+                      className="bg-muted/50 border-border text-foreground"
                       value={newClient.Cl_Correo}
                       onChange={(e) => setNewClient({...newClient, Cl_Correo: e.target.value})}
                     />
@@ -170,7 +180,7 @@ export default function ClientsPage() {
                     <Label className="text-xs uppercase font-bold text-muted-foreground">{t.clients.phone}</Label>
                     <Input 
                       placeholder="+..." 
-                      className="bg-muted/50 border-border"
+                      className="bg-muted/50 border-border text-foreground"
                       value={newClient.Cl_Telefono}
                       onChange={(e) => setNewClient({...newClient, Cl_Telefono: e.target.value})}
                     />
@@ -180,7 +190,7 @@ export default function ClientsPage() {
                   <Label className="text-xs uppercase font-bold text-muted-foreground">{t.clients.address}</Label>
                   <Input 
                     placeholder="..." 
-                    className="bg-muted/50 border-border"
+                    className="bg-muted/50 border-border text-foreground"
                     value={newClient.Cl_Direccion}
                     onChange={(e) => setNewClient({...newClient, Cl_Direccion: e.target.value})}
                   />
@@ -199,15 +209,15 @@ export default function ClientsPage() {
           </Dialog>
         </div>
 
-        <Card className="shadow-2xl overflow-hidden">
-          <CardHeader className="border-b bg-muted/20">
+        <Card className="shadow-2xl overflow-hidden border-border">
+          <CardHeader className="border-b border-border bg-muted/20">
             <div className="flex items-center justify-between">
               <CardTitle className="text-foreground text-lg font-bold">{t.clients.catalog}</CardTitle>
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder={t.common.search} 
-                  className="pl-10 h-9 text-xs"
+                  className="pl-10 h-9 text-xs bg-background border-border"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -217,12 +227,12 @@ export default function ClientsPage() {
           <CardContent className="p-0">
             {clientsLoading ? (
               <div className="flex items-center justify-center p-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-accent"></div>
+                <Loader2 className="h-8 w-8 animate-spin text-accent" />
               </div>
             ) : filteredClients.length > 0 ? (
               <Table>
                 <TableHeader className="bg-muted/30">
-                  <TableRow className="hover:bg-transparent">
+                  <TableRow className="hover:bg-transparent border-border">
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.clients.name}</TableHead>
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.clients.legal}</TableHead>
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.clients.email}</TableHead>
@@ -232,7 +242,7 @@ export default function ClientsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredClients.map((client) => (
-                    <TableRow key={client.id} className="hover:bg-muted/20 transition-colors">
+                    <TableRow key={client.id} className="hover:bg-muted/20 transition-colors border-border">
                       <TableCell className="py-4">
                         <div className="flex items-center gap-3">
                           <div className="h-9 w-9 rounded-lg bg-accent/20 flex items-center justify-center">
