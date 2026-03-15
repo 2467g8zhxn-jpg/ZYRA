@@ -14,15 +14,18 @@ import {
   Loader2,
   Briefcase,
   Users,
-  ClipboardList
+  ClipboardList,
+  Building2,
+  Zap,
+  Wrench
 } from "lucide-react";
 import Image from "next/image";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { doc, setDoc, collection, addDoc, query, where, serverTimestamp, updateDoc } from "firebase/firestore";
+import { doc, collection, addDoc, query, where, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,12 +65,15 @@ export default function ProjectsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
+  
+  // Estado para nuevo proyecto con los nuevos requisitos
   const [newProject, setNewProject] = useState({
     Pry_Nombre_Proyecto: "",
-    Cl_ID: "",
-    Srv_ID: "Instalación",
-    Eq_ID: "no-team",
-    ubicacion: "",
+    clientId: "",
+    serviceType: "Instalación",
+    assignedTeamId: "no-team",
+    addressType: "client" as "client" | "custom",
+    customAddress: "",
     imageUrl: "https://picsum.photos/seed/solar-default/800/450"
   });
 
@@ -80,12 +86,19 @@ export default function ProjectsPage() {
     seguridad_area: false
   });
 
+  // Consultas
   const userTeamsQuery = useMemoFirebase(() => {
     if (!db || !user || isAdmin) return null;
     return query(collection(db, "teams"), where("members", "array-contains", user.uid));
   }, [db, user, isAdmin]);
 
   const { data: myTeams } = useCollection(userTeamsQuery);
+
+  const clientsQuery = useMemoFirebase(() => db ? collection(db, "clientes") : null, [db]);
+  const { data: clients } = useCollection(clientsQuery);
+
+  const teamsQuery = useMemoFirebase(() => db ? collection(db, "teams") : null, [db]);
+  const { data: teams } = useCollection(teamsQuery);
 
   const projectsQuery = useMemoFirebase(() => {
     if (!db || !profile) return null;
@@ -97,24 +110,31 @@ export default function ProjectsPage() {
     return query(collection(db, "proyectos"), where("assignedTeamId", "==", "no-team"));
   }, [db, isAdmin, profile, myTeams]);
 
-  const teamsQuery = useMemoFirebase(() => {
-    if (!db) return null;
-    return collection(db, "teams");
-  }, [db]);
-
   const { data: firestoreProjects, isLoading: projectsLoading } = useCollection(projectsQuery);
-  const { data: teams } = useCollection(teamsQuery);
 
+  // Lógica para crear proyecto con los nuevos campos
   const handleCreateProject = () => {
     if (!db) return;
     setLoading(true);
+
+    const selectedClient = clients?.find(c => c.id === newProject.clientId);
+    const finalAddress = newProject.addressType === 'client' 
+      ? (selectedClient?.Cl_Direccion || "Sin dirección registrada") 
+      : newProject.customAddress;
+
     const colRef = collection(db, "proyectos");
     const data = {
-      ...newProject,
+      Pry_Nombre_Proyecto: newProject.Pry_Nombre_Proyecto,
+      clientId: newProject.clientId,
+      clientName: selectedClient?.Cl_Nombre || "Cliente Desconocido",
+      serviceType: newProject.serviceType,
+      assignedTeamId: newProject.assignedTeamId,
+      ubicacion: finalAddress,
       Pry_Estado: "Pendiente",
       progreso: 0,
-      assignedTeamId: newProject.Eq_ID,
       fecha_creacion: new Date().toISOString(),
+      imageUrl: newProject.imageUrl,
+      createdAt: serverTimestamp(),
     };
 
     addDoc(colRef, data)
@@ -123,10 +143,11 @@ export default function ProjectsPage() {
         setIsCreateDialogOpen(false);
         setNewProject({
           Pry_Nombre_Proyecto: "",
-          Cl_ID: "",
-          Srv_ID: "Instalación",
-          Eq_ID: "no-team",
-          ubicacion: "",
+          clientId: "",
+          serviceType: "Instalación",
+          assignedTeamId: "no-team",
+          addressType: "client",
+          customAddress: "",
           imageUrl: "https://picsum.photos/seed/solar-default/800/450"
         });
       })
@@ -308,33 +329,54 @@ export default function ProjectsPage() {
                   <Plus className="h-4 w-4" /> {t.projects.new_project}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md bg-card border-border">
+              <DialogContent className="sm:max-w-xl bg-card border-border">
                 <DialogHeader>
                   <DialogTitle className="text-accent text-xl">{t.projects.new_project}</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t.projects.project_name}</Label>
-                    <Input 
-                      className="h-11 bg-muted/50"
-                      value={newProject.Pry_Nombre_Proyecto}
-                      onChange={(e) => setNewProject({...newProject, Pry_Nombre_Proyecto: e.target.value})}
-                    />
-                  </div>
+                <div className="grid gap-6 py-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t.projects.client}</Label>
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Nombre del Proyecto</Label>
                       <Input 
+                        placeholder="Ej: Instalación Residencial..."
                         className="h-11 bg-muted/50"
-                        value={newProject.Cl_ID}
-                        onChange={(e) => setNewProject({...newProject, Cl_ID: e.target.value})}
+                        value={newProject.Pry_Nombre_Proyecto}
+                        onChange={(e) => setNewProject({...newProject, Pry_Nombre_Proyecto: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t.projects.team_assigned}</Label>
-                      <Select value={newProject.Eq_ID} onValueChange={(val) => setNewProject({...newProject, Eq_ID: val})}>
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Cliente</Label>
+                      <Select value={newProject.clientId} onValueChange={(val) => setNewProject({...newProject, clientId: val})}>
                         <SelectTrigger className="h-11 bg-muted/50">
-                          <SelectValue placeholder={t.common.back} />
+                          <SelectValue placeholder="Seleccionar cliente..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clients?.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>{client.Cl_Nombre}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Tipo de Servicio</Label>
+                      <Select value={newProject.serviceType} onValueChange={(val) => setNewProject({...newProject, serviceType: val})}>
+                        <SelectTrigger className="h-11 bg-muted/50">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Instalación">Instalación Fotovoltaica</SelectItem>
+                          <SelectItem value="Mantenimiento">Mantenimiento Preventivo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Equipo Asignado</Label>
+                      <Select value={newProject.assignedTeamId} onValueChange={(val) => setNewProject({...newProject, assignedTeamId: val})}>
+                        <SelectTrigger className="h-11 bg-muted/50">
+                          <SelectValue placeholder="Sin asignar" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="no-team">Sin asignar</SelectItem>
@@ -345,19 +387,40 @@ export default function ProjectsPage() {
                       </Select>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t.projects.location}</Label>
-                    <Input 
-                      className="h-11 bg-muted/50"
-                      value={newProject.ubicacion}
-                      onChange={(e) => setNewProject({...newProject, ubicacion: e.target.value})}
-                    />
+
+                  <div className="space-y-4 bg-muted/20 p-4 rounded-xl border border-border">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Dirección del Proyecto</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] uppercase font-bold text-muted-foreground">Usar la del Cliente</span>
+                        <Switch 
+                          checked={newProject.addressType === 'custom'} 
+                          onCheckedChange={(checked) => setNewProject({...newProject, addressType: checked ? 'custom' : 'client'})} 
+                        />
+                        <span className="text-[9px] uppercase font-bold text-muted-foreground">Personalizada</span>
+                      </div>
+                    </div>
+                    
+                    {newProject.addressType === 'custom' ? (
+                      <Input 
+                        placeholder="Ingresar dirección física..."
+                        className="h-11 bg-background"
+                        value={newProject.customAddress}
+                        onChange={(e) => setNewProject({...newProject, customAddress: e.target.value})}
+                      />
+                    ) : (
+                      <div className="text-sm p-3 bg-background/50 rounded-lg border border-border/50 text-muted-foreground italic">
+                        {newProject.clientId ? (
+                          clients?.find(c => c.id === newProject.clientId)?.Cl_Direccion || "Este cliente no tiene dirección registrada"
+                        ) : "Selecciona un cliente para ver su dirección..."}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <DialogFooter>
                   <Button 
                     className="bg-accent hover:bg-accent/90 text-white w-full h-12 font-bold"
-                    disabled={!newProject.Pry_Nombre_Proyecto || loading}
+                    disabled={!newProject.Pry_Nombre_Proyecto || !newProject.clientId || loading}
                     onClick={handleCreateProject}
                   >
                     {loading ? t.common.loading : t.common.create}
@@ -385,9 +448,13 @@ export default function ProjectsPage() {
                       className="object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                    <div className="absolute top-3 right-3">
+                    <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
                       <Badge className={cn("font-bold text-[9px] px-2 py-0.5 text-white border-none", statusColor)}>
                         {(project.Pry_Estado || 'PENDIENTE').toUpperCase()}
+                      </Badge>
+                      <Badge variant="outline" className="bg-black/50 text-[8px] border-white/20 text-white gap-1">
+                        {project.serviceType === 'Mantenimiento' ? <Wrench className="h-2.5 w-2.5" /> : <Zap className="h-2.5 w-2.5" />}
+                        {project.serviceType?.toUpperCase()}
                       </Badge>
                     </div>
                   </div>
@@ -398,6 +465,10 @@ export default function ProjectsPage() {
                       <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase font-bold mb-1">
                         <MapPin className="h-3 w-3 text-accent" />
                         <span className="truncate">{project.ubicacion || "Ubicación Pendiente"}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase font-bold mb-3">
+                        <Building2 className="h-3 w-3 text-accent" />
+                        <span className="truncate">{project.clientName || "Cliente no especificado"}</span>
                       </div>
                       {isAdmin && (
                         <div className="flex items-center gap-1.5 text-[9px] text-accent uppercase font-bold mb-3">
@@ -480,7 +551,7 @@ export default function ProjectsPage() {
                           <SheetHeader className="text-left mb-8">
                             <SheetTitle className="text-accent text-2xl font-black">{project.Pry_Nombre_Proyecto}</SheetTitle>
                             <SheetDescription className="text-muted-foreground text-xs uppercase font-bold tracking-widest">
-                              {isEnCurso ? t.projects.finish_day : t.projects.checklist}
+                              {project.serviceType} - {isEnCurso ? t.projects.finish_day : t.projects.checklist}
                             </SheetDescription>
                           </SheetHeader>
                           
@@ -501,6 +572,12 @@ export default function ProjectsPage() {
                                       />
                                     </div>
                                   ))}
+                                  {project.serviceType === 'Mantenimiento' && (
+                                    <div className="p-4 bg-accent/5 rounded-2xl border border-accent/20">
+                                      <p className="text-[10px] font-bold text-accent uppercase mb-2">Protocolo de Mantenimiento</p>
+                                      <p className="text-xs text-muted-foreground italic">Recuerda tomar fotos antes y después de la limpieza.</p>
+                                    </div>
+                                  )}
                                 </div>
                                 <Button 
                                   className="w-full bg-accent hover:bg-accent/90 text-white font-black h-16 text-lg rounded-2xl shadow-xl shadow-accent/20"
