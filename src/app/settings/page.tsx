@@ -38,8 +38,6 @@ export default function SettingsPage() {
 
   const handleSaveSettings = () => {
     setLoading(true);
-    // Settings are automatically saved by the ThemeProvider effect
-    // We just show a visual confirmation here
     setTimeout(() => {
       setLoading(false);
       toast({
@@ -53,14 +51,14 @@ export default function SettingsPage() {
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-8 font-body">
         <div className="flex flex-col gap-2">
-          <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Settings className="h-8 w-8 text-accent" /> {t.settings.title}
           </h2>
           <p className="text-muted-foreground">{t.settings.subtitle}</p>
         </div>
 
         <Tabs defaultValue="appearance" className="w-full">
-          <TabsList className="bg-white/5 border-white/10 p-1 mb-6">
+          <TabsList className="bg-muted p-1 mb-6">
             <TabsTrigger value="appearance" className="data-[state=active]:bg-accent data-[state=active]:text-white gap-2 text-xs">
               <Palette className="h-4 w-4" /> {t.settings.appearance}
             </TabsTrigger>
@@ -73,17 +71,17 @@ export default function SettingsPage() {
           </TabsList>
 
           <TabsContent value="appearance">
-            <Card className="bg-card border-white/10">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-white text-lg flex items-center gap-2">
+                <CardTitle className="text-foreground text-lg flex items-center gap-2">
                   <Palette className="h-5 w-5 text-accent" /> {t.settings.viz_title}
                 </CardTitle>
                 <CardDescription>{t.settings.viz_desc}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-white/2 border border-white/5">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border">
                   <div className="space-y-0.5">
-                    <Label className="text-sm font-bold text-white">{t.settings.dark_mode}</Label>
+                    <Label className="text-sm font-bold text-foreground">{t.settings.dark_mode}</Label>
                     <p className="text-xs text-muted-foreground">{t.settings.dark_mode_desc}</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -114,12 +112,12 @@ export default function SettingsPage() {
                         <Label
                           htmlFor={theme.id}
                           className={cn(
-                            "flex flex-col items-center justify-between rounded-xl border-2 border-white/5 bg-white/2 p-4 hover:bg-white/5 peer-data-[state=checked]:border-accent cursor-pointer transition-all",
+                            "flex flex-col items-center justify-between rounded-xl border-2 bg-muted/20 p-4 hover:bg-muted/40 peer-data-[state=checked]:border-accent cursor-pointer transition-all",
                             themeColor === theme.id && "border-accent bg-accent/5"
                           )}
                         >
                           <div className={cn("h-6 w-6 rounded-full mb-2", theme.color)} />
-                          <span className="text-[10px] font-bold text-center">{theme.label}</span>
+                          <span className="text-[10px] font-bold text-center text-foreground">{theme.label}</span>
                         </Label>
                       </div>
                     ))}
@@ -130,9 +128,9 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="language">
-            <Card className="bg-card border-white/10">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-white text-lg flex items-center gap-2">
+                <CardTitle className="text-foreground text-lg flex items-center gap-2">
                   <Languages className="h-5 w-5 text-accent" /> {t.settings.loc_title}
                 </CardTitle>
                 <CardDescription>{t.settings.loc_desc}</CardDescription>
@@ -141,10 +139,10 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-bold text-muted-foreground tracking-widest">{t.settings.sys_lang}</Label>
                   <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
-                    <SelectTrigger className="bg-white/5 border-white/10 h-12">
+                    <SelectTrigger className="h-12">
                       <SelectValue placeholder={t.settings.sys_lang} />
                     </SelectTrigger>
-                    <SelectContent className="bg-card border-white/10 text-white">
+                    <SelectContent>
                       <SelectItem value="es">{t.settings.lang_options.es}</SelectItem>
                       <SelectItem value="en">{t.settings.lang_options.en}</SelectItem>
                       <SelectItem value="zh">{t.settings.lang_options.zh}</SelectItem>
@@ -156,9 +154,9 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="accessibility">
-            <Card className="bg-card border-white/10">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-white text-lg flex items-center gap-2">
+                <CardTitle className="text-foreground text-lg flex items-center gap-2">
                   <Type className="h-5 w-5 text-accent" /> {t.settings.acc_title}
                 </CardTitle>
                 <CardDescription>{t.settings.acc_desc}</CardDescription>
@@ -181,9 +179,9 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="p-6 rounded-2xl bg-white/2 border border-white/5">
+                <div className="p-6 rounded-2xl bg-muted/20 border">
                   <p className="text-muted-foreground mb-4 text-xs italic">{t.settings.preview}</p>
-                  <p style={{ fontSize: `${fontSize}px` }} className="text-white leading-relaxed">
+                  <p style={{ fontSize: `${fontSize}px` }} className="text-foreground leading-relaxed">
                     {t.settings.preview_txt}
                   </p>
                 </div>
@@ -195,7 +193,7 @@ export default function SettingsPage() {
         <div className="flex justify-end gap-4 pb-20 md:pb-0">
           <Button 
             variant="outline" 
-            className="border-white/10 text-white hover:bg-white/5 px-8"
+            className="px-8"
             onClick={() => window.history.back()}
           >
             {t.common.cancel}

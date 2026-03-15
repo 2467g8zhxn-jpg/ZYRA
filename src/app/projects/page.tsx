@@ -17,7 +17,7 @@ import Image from "next/image";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, addDoc, query, where, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
@@ -244,7 +244,7 @@ export default function ProjectsPage() {
       <div className="max-w-7xl mx-auto space-y-6 font-body">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
               {isAdmin ? t.projects.title_admin : t.projects.title_op}
             </h2>
             <p className="text-xs md:text-sm text-muted-foreground">
@@ -259,7 +259,7 @@ export default function ProjectsPage() {
                   <Plus className="h-4 w-4" /> {t.projects.new_project}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-card border-white/10 text-white sm:max-w-md">
+              <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle className="text-accent text-xl">{t.projects.new_project}</DialogTitle>
                 </DialogHeader>
@@ -267,7 +267,7 @@ export default function ProjectsPage() {
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t.projects.project_name}</Label>
                     <Input 
-                      className="bg-white/5 border-white/10 h-11"
+                      className="h-11"
                       value={newProject.Pry_Nombre_Proyecto}
                       onChange={(e) => setNewProject({...newProject, Pry_Nombre_Proyecto: e.target.value})}
                     />
@@ -276,7 +276,7 @@ export default function ProjectsPage() {
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t.projects.client}</Label>
                       <Input 
-                        className="bg-white/5 border-white/10 h-11"
+                        className="h-11"
                         value={newProject.Cl_ID}
                         onChange={(e) => setNewProject({...newProject, Cl_ID: e.target.value})}
                       />
@@ -284,10 +284,10 @@ export default function ProjectsPage() {
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t.projects.team_assigned}</Label>
                       <Select onValueChange={(val) => setNewProject({...newProject, Eq_ID: val})}>
-                        <SelectTrigger className="bg-white/5 border-white/10 h-11">
+                        <SelectTrigger className="h-11">
                           <SelectValue placeholder={t.common.back} />
                         </SelectTrigger>
-                        <SelectContent className="bg-card border-white/10 text-white">
+                        <SelectContent>
                           {teams?.map((team) => (
                             <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
                           ))}
@@ -298,7 +298,7 @@ export default function ProjectsPage() {
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase font-bold text-muted-foreground">{t.projects.location}</Label>
                     <Input 
-                      className="bg-white/5 border-white/10 h-11"
+                      className="h-11"
                       value={newProject.ubicacion}
                       onChange={(e) => setNewProject({...newProject, ubicacion: e.target.value})}
                     />
@@ -325,7 +325,7 @@ export default function ProjectsPage() {
               const statusColor = project.Pry_Estado === 'EnProceso' ? 'bg-emerald-500' : project.Pry_Estado === 'Finalizado' ? 'bg-primary' : 'bg-yellow-500';
 
               return (
-                <Card key={project.id} className="bg-card border-white/10 overflow-hidden flex flex-col h-full shadow-lg relative group">
+                <Card key={project.id} className="overflow-hidden flex flex-col h-full shadow-lg relative group">
                   <div className="relative h-40 w-full overflow-hidden">
                     <Image
                       src={project.imageUrl || "https://picsum.photos/seed/solar-pan/800/450"}
@@ -335,7 +335,7 @@ export default function ProjectsPage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                     <div className="absolute top-3 right-3">
-                      <Badge className={cn("font-bold text-[9px] px-2 py-0.5", statusColor)}>
+                      <Badge className={cn("font-bold text-[9px] px-2 py-0.5 text-white", statusColor)}>
                         {(project.Pry_Estado || 'PENDIENTE').toUpperCase()}
                       </Badge>
                     </div>
@@ -343,7 +343,7 @@ export default function ProjectsPage() {
                   
                   <CardContent className="p-4 flex-1 flex flex-col justify-between">
                     <div>
-                      <h3 className="text-base font-bold text-white mb-1">{project.Pry_Nombre_Proyecto}</h3>
+                      <h3 className="text-base font-bold text-foreground mb-1">{project.Pry_Nombre_Proyecto}</h3>
                       <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase font-bold mb-3">
                         <MapPin className="h-3 w-3 text-accent" />
                         <span className="truncate">{project.ubicacion || "Ubicación Pendiente"}</span>
@@ -353,16 +353,16 @@ export default function ProjectsPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold uppercase">
                         <span>{t.projects.progress}</span>
-                        <span className="text-white">{project.progreso || 0}%</span>
+                        <span className="text-foreground">{project.progreso || 0}%</span>
                       </div>
-                      <Progress value={project.progreso || 0} className="h-1 bg-white/5" />
+                      <Progress value={project.progreso || 0} className="h-1" />
                     </div>
                   </CardContent>
 
-                  <CardFooter className="p-0 border-t border-white/5">
+                  <CardFooter className="p-0 border-t">
                     {isAdmin ? (
                       <div className="grid grid-cols-2 w-full">
-                        <Button variant="ghost" className="h-10 text-[10px] font-bold border-r border-white/5 rounded-none uppercase">{t.nav.teams}</Button>
+                        <Button variant="ghost" className="h-10 text-[10px] font-bold border-r rounded-none uppercase">{t.nav.teams}</Button>
                         <Button variant="ghost" className="h-10 text-[10px] font-bold rounded-none uppercase text-accent">{t.nav.reports}</Button>
                       </div>
                     ) : (
@@ -373,7 +373,7 @@ export default function ProjectsPage() {
                         <SheetTrigger asChild>
                           <Button 
                             className={cn(
-                              "w-full h-12 rounded-none font-black text-xs uppercase tracking-widest",
+                              "w-full h-12 rounded-none font-black text-xs uppercase tracking-widest text-white",
                               isEnCurso ? "bg-emerald-600 hover:bg-emerald-700" : "bg-accent hover:bg-accent/90"
                             )}
                           >
@@ -381,8 +381,8 @@ export default function ProjectsPage() {
                             <ArrowRight className="h-3 w-3 ml-2" />
                           </Button>
                         </SheetTrigger>
-                        <SheetContent side="bottom" className="bg-card border-white/10 text-white h-[90vh] rounded-t-3xl overflow-y-auto px-6">
-                          <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-6 mt-2" />
+                        <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl overflow-y-auto px-6">
+                          <div className="w-12 h-1.5 bg-muted rounded-full mx-auto mb-6 mt-2" />
                           <SheetHeader className="text-left mb-8">
                             <SheetTitle className="text-accent text-2xl font-black">{project.Pry_Nombre_Proyecto}</SheetTitle>
                             <SheetDescription className="text-muted-foreground text-xs uppercase font-bold tracking-widest">
@@ -390,7 +390,7 @@ export default function ProjectsPage() {
                             </SheetDescription>
                           </SheetHeader>
                           
-                          <div className="space-y-6 pb-20">
+                          <div className="space-y-6 pb-20 text-foreground">
                             {!isEnCurso ? (
                               <div className="space-y-6">
                                 <div className="space-y-4">
@@ -399,8 +399,8 @@ export default function ProjectsPage() {
                                     { key: 'seguridad_area', label: t.projects.area_label },
                                     { key: 'herramientas_listas', label: t.projects.tools_label },
                                   ].map((item) => (
-                                    <div key={item.key} className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5">
-                                      <Label className="text-xs font-bold leading-tight max-w-[70%]">{item.label}</Label>
+                                    <div key={item.key} className="flex items-center justify-between p-4 bg-muted/30 rounded-2xl border">
+                                      <Label className="text-xs font-bold leading-tight max-w-[70%] text-foreground">{item.label}</Label>
                                       <Switch 
                                         checked={(checklist as any)[item.key]} 
                                         onCheckedChange={(v) => setChecklist({...checklist, [item.key]: v})} 
@@ -434,17 +434,17 @@ export default function ProjectsPage() {
                                   </div>
                                   <Textarea 
                                     placeholder={t.projects.placeholder_notes}
-                                    className="bg-white/2 border-white/10 min-h-[180px] text-sm rounded-2xl p-4"
+                                    className="min-h-[180px] text-sm rounded-2xl p-4"
                                     value={reportContent}
                                     onChange={(e) => setReportContent(e.target.value)}
                                   />
                                   
                                   <div className="grid grid-cols-2 gap-4">
-                                    <div className="aspect-square w-full rounded-2xl bg-white/2 border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent/40 transition-colors">
+                                    <div className="aspect-square w-full rounded-2xl bg-muted/20 border-2 border-dashed flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent/40 transition-colors">
                                       <Camera className="h-6 w-6" />
                                       <span className="text-[9px] font-bold uppercase tracking-tighter">{t.projects.photo_work}</span>
                                     </div>
-                                    <div className="aspect-square w-full rounded-2xl bg-white/2 border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent/40 transition-colors">
+                                    <div className="aspect-square w-full rounded-2xl bg-muted/20 border-2 border-dashed flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent/40 transition-colors">
                                       <Camera className="h-6 w-6" />
                                       <span className="text-[9px] font-bold uppercase tracking-tighter">{t.projects.photo_material}</span>
                                     </div>
@@ -470,11 +470,11 @@ export default function ProjectsPage() {
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6 bg-white/2 rounded-3xl border border-dashed border-white/5">
-            <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+          <div className="flex flex-col items-center justify-center py-20 text-center px-6 bg-muted/20 rounded-3xl border border-dashed">
+            <div className="h-16 w-16 rounded-full bg-muted/30 flex items-center justify-center mb-4 border">
               <Briefcase className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-bold text-white uppercase tracking-tighter">{t.common.no_results}</h3>
+            <h3 className="text-lg font-bold text-foreground uppercase tracking-tighter">{t.common.no_results}</h3>
             <p className="text-sm text-muted-foreground mt-2 max-w-xs">
               {isAdmin ? t.common.no_results : t.common.no_results}
             </p>

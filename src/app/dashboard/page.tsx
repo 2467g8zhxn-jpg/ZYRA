@@ -7,7 +7,6 @@ import {
   Flame, 
   Star, 
   Zap, 
-  CheckCircle2, 
   TrendingUp,
   Briefcase,
   Camera,
@@ -61,7 +60,7 @@ export default function DashboardPage() {
     return (
       <div className="space-y-8 max-w-7xl mx-auto font-body">
         <div className="flex flex-col gap-2">
-          <h2 className="text-3xl font-bold tracking-tight text-white">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">
             {t.common.welcome}, <span className="text-accent">{t.common.admin}.</span>
           </h2>
           <p className="text-muted-foreground">{t.dashboard.admin_subtitle}</p>
@@ -73,43 +72,42 @@ export default function DashboardPage() {
             value="3"
             icon={Briefcase}
             description={`de 5 ${t.dashboard.total}`}
-            className="border-white/10"
           />
           <StatCard
             title={t.dashboard.daily_reports}
             value="+0"
             icon={Camera}
             description={`5 en ${t.dashboard.total}`}
-            className="border-white/10"
           />
           <StatCard
             title={t.dashboard.active_employees}
             value="6"
             icon={Users}
             description={`7 miembros en ${t.dashboard.total}`}
-            className="border-white/10"
           />
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="lg:col-span-2 bg-card border-white/10">
+          <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-white text-lg">{t.dashboard.weekly_reports}</CardTitle>
+              <CardTitle className="text-foreground text-lg">{t.dashboard.weekly_reports}</CardTitle>
             </CardHeader>
             <CardContent className="h-[300px]">
-              <ChartContainer config={{ total: { label: t.nav.reports, color: "#8A2BE2" } }}>
+              <ChartContainer config={{ total: { label: t.nav.reports, color: "hsl(var(--accent))" } }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={weeklyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} vertical={false} />
                     <XAxis 
                       dataKey="name" 
-                      stroke="#ffffff50" 
+                      stroke="currentColor" 
+                      opacity={0.5}
                       fontSize={12} 
                       tickLine={false} 
                       axisLine={false} 
                     />
                     <YAxis 
-                      stroke="#ffffff50" 
+                      stroke="currentColor"
+                      opacity={0.5}
                       fontSize={12} 
                       tickLine={false} 
                       axisLine={false} 
@@ -117,7 +115,7 @@ export default function DashboardPage() {
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Bar 
                       dataKey="total" 
-                      fill="#8A2BE2" 
+                      fill="hsl(var(--accent))" 
                       radius={[4, 4, 0, 0]} 
                       barSize={40}
                     />
@@ -127,9 +125,9 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-white/10">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-white text-lg">{t.dashboard.work_progress}</CardTitle>
+              <CardTitle className="text-foreground text-lg">{t.dashboard.work_progress}</CardTitle>
             </CardHeader>
             <CardContent className="h-[300px] flex flex-col items-center justify-center relative">
               <ResponsiveContainer width="100%" height="100%">
@@ -148,8 +146,8 @@ export default function DashboardPage() {
                     ))}
                   </Pie>
                   <RechartsTooltip 
-                    contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
-                    itemStyle={{ color: '#fff' }}
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -178,14 +176,14 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto font-body">
       <div className="flex flex-col gap-1">
-        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
           {t.dashboard.op_panel}
         </h2>
         <p className="text-xs md:text-sm text-muted-foreground">{t.dashboard.op_subtitle}</p>
       </div>
 
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-card border-white/10 overflow-hidden relative">
+        <Card className="overflow-hidden relative">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="p-2 rounded-lg bg-accent/20">
@@ -195,35 +193,35 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-end">
-                <h3 className="text-2xl font-bold text-white">{Math.floor(progressPercentage)}%</h3>
+                <h3 className="text-2xl font-bold text-foreground">{Math.floor(progressPercentage)}%</h3>
                 <span className="text-[10px] text-muted-foreground font-bold">{t.dashboard.points}: {puntos} / {nivel * 200}</span>
               </div>
-              <Progress value={progressPercentage} className="h-1.5 bg-white/5" />
+              <Progress value={progressPercentage} className="h-1.5" />
             </div>
           </CardContent>
         </Card>
 
         <div className="grid grid-cols-2 gap-4 md:contents">
-          <Card className="bg-card border-white/10 flex flex-col items-center justify-center p-4">
+          <Card className="flex flex-col items-center justify-center p-4">
             <div className="h-10 w-10 rounded-full bg-[#FF4500]/10 flex items-center justify-center mb-2 shadow-[0_0_10px_rgba(255,69,0,0.2)]">
               <Flame className="h-5 w-5 text-[#FF4500]" />
             </div>
-            <h3 className="text-xl font-bold text-white">{racha}</h3>
+            <h3 className="text-xl font-bold text-foreground">{racha}</h3>
             <p className="text-[9px] font-bold text-[#FF4500] uppercase tracking-tighter">{t.dashboard.streak}</p>
           </Card>
 
-          <Card className="bg-card border-white/10 flex flex-col items-center justify-center p-4">
+          <Card className="flex flex-col items-center justify-center p-4">
             <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center mb-2">
               <Trophy className="h-5 w-5 text-yellow-500" />
             </div>
-            <h3 className="text-xl font-bold text-white">{logrosMock.filter((l: any) => l.completado).length}</h3>
+            <h3 className="text-xl font-bold text-foreground">{logrosMock.filter((l: any) => l.completado).length}</h3>
             <p className="text-[9px] font-bold text-yellow-500 uppercase tracking-tighter">{t.dashboard.achievements}</p>
           </Card>
         </div>
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
+        <h3 className="text-sm font-bold text-foreground uppercase tracking-widest flex items-center gap-2">
           <Star className="h-4 w-4 text-accent" /> {t.dashboard.badges}
         </h3>
         <div className="grid grid-cols-2 gap-3">
@@ -233,8 +231,8 @@ export default function DashboardPage() {
               className={cn(
                 "flex items-center gap-2 p-3 rounded-xl border transition-all",
                 logro.completado 
-                  ? "bg-accent/5 border-accent/20 text-white" 
-                  : "bg-white/2 border-white/5 text-muted-foreground opacity-30"
+                  ? "bg-accent/5 border-accent/20 text-foreground" 
+                  : "bg-muted/30 border-border text-muted-foreground opacity-30"
               )}
             >
               <div className={cn(
@@ -246,7 +244,7 @@ export default function DashboardPage() {
               <span className="font-bold text-[10px] truncate">{logro.nombre}</span>
             </div>
           )) : (
-            <div className="col-span-2 py-8 text-center bg-white/2 border border-dashed border-white/5 rounded-2xl">
+            <div className="col-span-2 py-8 text-center bg-muted/20 border border-dashed border-border rounded-2xl">
               <p className="text-xs text-muted-foreground">{t.dashboard.op_subtitle}</p>
             </div>
           )}

@@ -99,7 +99,7 @@ export default function ClientsPage() {
           <div className="p-4 rounded-full bg-destructive/10">
             <Building2 className="h-12 w-12 text-destructive" />
           </div>
-          <h2 className="text-2xl font-bold text-white">{t.common.error}</h2>
+          <h2 className="text-2xl font-bold text-foreground">{t.common.error}</h2>
           <p className="text-muted-foreground max-w-md">
             {t.employees.subtitle}
           </p>
@@ -113,7 +113,7 @@ export default function ClientsPage() {
       <div className="max-w-7xl mx-auto space-y-8 font-body">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
-            <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Building2 className="h-8 w-8 text-accent" /> {t.clients.title}
             </h2>
             <p className="text-muted-foreground">{t.clients.subtitle}</p>
@@ -125,7 +125,7 @@ export default function ClientsPage() {
                 <Plus className="h-4 w-4" /> {t.clients.register}
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-white/10 text-white sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle className="text-accent">{t.clients.register}</DialogTitle>
                 <CardDescription>
@@ -139,7 +139,7 @@ export default function ClientsPage() {
                     <Input 
                       id="name" 
                       placeholder="ZYRA..." 
-                      className="bg-white/5 border-white/10"
+                      className="bg-muted/50 border-border"
                       value={newClient.Cl_Nombre}
                       onChange={(e) => setNewClient({...newClient, Cl_Nombre: e.target.value})}
                     />
@@ -149,7 +149,7 @@ export default function ClientsPage() {
                     <Input 
                       id="legal" 
                       placeholder="..." 
-                      className="bg-white/5 border-white/10"
+                      className="bg-muted/50 border-border"
                       value={newClient.Cl_RazonSocial}
                       onChange={(e) => setNewClient({...newClient, Cl_RazonSocial: e.target.value})}
                     />
@@ -161,7 +161,7 @@ export default function ClientsPage() {
                     <Input 
                       type="email"
                       placeholder="email@company.com" 
-                      className="bg-white/5 border-white/10"
+                      className="bg-muted/50 border-border"
                       value={newClient.Cl_Correo}
                       onChange={(e) => setNewClient({...newClient, Cl_Correo: e.target.value})}
                     />
@@ -170,7 +170,7 @@ export default function ClientsPage() {
                     <Label className="text-xs uppercase font-bold text-muted-foreground">{t.clients.phone}</Label>
                     <Input 
                       placeholder="+..." 
-                      className="bg-white/5 border-white/10"
+                      className="bg-muted/50 border-border"
                       value={newClient.Cl_Telefono}
                       onChange={(e) => setNewClient({...newClient, Cl_Telefono: e.target.value})}
                     />
@@ -180,7 +180,7 @@ export default function ClientsPage() {
                   <Label className="text-xs uppercase font-bold text-muted-foreground">{t.clients.address}</Label>
                   <Input 
                     placeholder="..." 
-                    className="bg-white/5 border-white/10"
+                    className="bg-muted/50 border-border"
                     value={newClient.Cl_Direccion}
                     onChange={(e) => setNewClient({...newClient, Cl_Direccion: e.target.value})}
                   />
@@ -199,15 +199,15 @@ export default function ClientsPage() {
           </Dialog>
         </div>
 
-        <Card className="bg-card border-white/5 shadow-2xl overflow-hidden">
-          <CardHeader className="border-b border-white/5 bg-white/2">
+        <Card className="shadow-2xl overflow-hidden">
+          <CardHeader className="border-b bg-muted/20">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-white text-lg font-bold">{t.clients.catalog}</CardTitle>
+              <CardTitle className="text-foreground text-lg font-bold">{t.clients.catalog}</CardTitle>
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder={t.common.search} 
-                  className="pl-10 bg-white/5 border-white/5 text-xs h-9"
+                  className="pl-10 h-9 text-xs"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -221,8 +221,8 @@ export default function ClientsPage() {
               </div>
             ) : filteredClients.length > 0 ? (
               <Table>
-                <TableHeader className="bg-white/5">
-                  <TableRow className="border-white/5 hover:bg-transparent">
+                <TableHeader className="bg-muted/30">
+                  <TableRow className="hover:bg-transparent">
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.clients.name}</TableHead>
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.clients.legal}</TableHead>
                     <TableHead className="text-muted-foreground uppercase text-[10px] font-bold">{t.clients.email}</TableHead>
@@ -232,14 +232,14 @@ export default function ClientsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredClients.map((client) => (
-                    <TableRow key={client.id} className="border-white/5 hover:bg-white/2 transition-colors">
+                    <TableRow key={client.id} className="hover:bg-muted/20 transition-colors">
                       <TableCell className="py-4">
                         <div className="flex items-center gap-3">
                           <div className="h-9 w-9 rounded-lg bg-accent/20 flex items-center justify-center">
                             <User className="h-5 w-5 text-accent" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white">{client.Cl_Nombre}</p>
+                            <p className="text-sm font-bold text-foreground">{client.Cl_Nombre}</p>
                             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{t.common.id}: {client.id.substring(0,8)}</p>
                           </div>
                         </div>
@@ -251,7 +251,7 @@ export default function ClientsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-xs text-white">
+                          <div className="flex items-center gap-2 text-xs text-foreground">
                             <Mail className="h-3 w-3 text-accent" /> {client.Cl_Correo || "-"}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -275,10 +275,10 @@ export default function ClientsPage() {
               </Table>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-                <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center mb-4">
                   <Building2 className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-bold text-white uppercase tracking-tighter">{t.common.no_results}</h3>
+                <h3 className="text-lg font-bold text-foreground uppercase tracking-tighter">{t.common.no_results}</h3>
               </div>
             )}
           </CardContent>
