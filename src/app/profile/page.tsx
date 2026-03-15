@@ -95,10 +95,22 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t.employees.full_name}</Label><Input value={profile?.nombre || ""} readOnly className="bg-muted/50 border-border text-sm" /></div>
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">ID</Label><Input value={user?.uid?.substring(0, 12).toUpperCase()} readOnly className="bg-muted/50 border-border font-mono text-sm text-accent" /></div>
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">EMAIL</Label><Input value={profile?.emailAcceso || profile?.email || "N/A"} readOnly className="bg-muted/50 border-border text-sm" /></div>
-                <div className="space-y-2"><Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">ROLE</Label><div className="h-10 px-3 flex items-center bg-muted/50 border border-border rounded-md text-sm text-foreground font-bold uppercase">{isAdmin ? t.common.admin : t.common.employee}</div></div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{t.employees.full_name}</Label>
+                  <Input value={profile?.nombre || ""} readOnly className="bg-muted/50 border-border text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">ID</Label>
+                  <Input value={user?.uid?.substring(0, 12).toUpperCase() || ""} readOnly className="bg-muted/50 border-border font-mono text-sm text-accent" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">EMAIL</Label>
+                  <Input value={profile?.emailAcceso || profile?.email || "N/A"} readOnly className="bg-muted/50 border-border text-sm" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">ROLE</Label>
+                  <div className="h-10 px-3 flex items-center bg-muted/50 border border-border rounded-md text-sm text-foreground font-bold uppercase">{isAdmin ? t.common.admin : t.common.employee}</div>
+                </div>
               </div>
             </CardContent>
             <CardFooter className="border-t border-border pt-6 bg-muted/10">
