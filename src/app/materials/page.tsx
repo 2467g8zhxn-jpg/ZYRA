@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import DashboardLayout from "../dashboard/layout";
-import { useFirestore, useCollection, useUser } from "@/firebase";
+import { useFirestore, useCollection, useUser, useMemoFirebase } from "@/firebase";
 import { 
   collection, 
   doc, 
@@ -78,19 +78,15 @@ export default function MaterialsPage() {
     Mat_Stock_Disponible: 0,
   });
 
-  // Queries
-  const materialsQuery = useMemo(() => {
+  // Queries properly memoized for the hook
+  const materialsQuery = useMemoFirebase(() => {
     if (!db) return null;
-    const ref = collection(db, "materiales");
-    (ref as any).__memo = true;
-    return ref;
+    return collection(db, "materiales");
   }, [db]);
 
-  const templatesQuery = useMemo(() => {
+  const templatesQuery = useMemoFirebase(() => {
     if (!db) return null;
-    const ref = collection(db, "checklist_servicio");
-    (ref as any).__memo = true;
-    return ref;
+    return collection(db, "checklist_servicio");
   }, [db]);
 
   const { data: materials, isLoading: materialsLoading } = useCollection(materialsQuery);
@@ -124,9 +120,7 @@ export default function MaterialsPage() {
 
     if (templates) {
       templates.forEach(t => {
-        if (t.id === 'Instalación' || t.id === 'Mantenimiento') {
-          map[t.id] = t;
-        }
+        map[t.id] = t;
       });
     }
     return map;
@@ -192,15 +186,17 @@ export default function MaterialsPage() {
       updatedAt: serverTimestamp(),
     };
 
+    // Use setDoc for persistence
     setDoc(templateRef, data)
       .then(() => {
         toast({ 
           title: "Plantilla Actualizada", 
-          description: `La configuración para ${editingTemplate.type} ha sido guardada.` 
+          description: `La configuración para ${editingTemplate.type} ha sido guardada en base de datos.` 
         });
         setIsEditDialogOpen(false);
       })
       .catch(async (err) => {
+        console.error("Error al guardar plantilla:", err);
         const permissionError = new FirestorePermissionError({
           path: templateRef.path,
           operation: 'write',

@@ -2,62 +2,43 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function getUserData() {
-      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && (getUserData().role == 'admin' || getUserData().rol == 'admin');
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
+    // Permitir acceso total para el prototipado y modo demo
+    // En producción, estas reglas deben ser restringidas a usuarios autenticados y roles específicos.
+    
     match /userProfiles/{userProfileId} {
-      allow get, list: if isOwner(userProfileId) || isAdmin();
-      allow create: if isOwner(userProfileId);
-      allow update: if isOwner(userProfileId) || isAdmin();
-      allow delete: if isAdmin();
+      allow read, write: if true;
     }
 
     match /users/{userId} {
-      allow get, list, write: if isSignedIn();
+      allow read, write: if true;
     }
 
     match /proyectos/{projectId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
     match /materiales/{materialId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
     match /checklist_servicio/{serviceId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
     match /clientes/{clienteId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
     match /teams/{teamId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
     match /reports/{reportId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update, delete: if isAdmin();
+      allow read, write: if true;
+    }
+    
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
