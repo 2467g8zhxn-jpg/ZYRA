@@ -1,4 +1,3 @@
-
 "use client";
 
 import { 
@@ -28,6 +27,7 @@ export function UserNav() {
     router.push("/login");
   };
 
+  const isAdmin = profile?.rol === 'admin';
   const nameInitial = profile?.nombre?.substring(0, 1).toUpperCase() || "Z";
 
   return (
@@ -45,7 +45,7 @@ export function UserNav() {
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-bold leading-none">{profile?.nombre}</p>
             <p className="text-[10px] font-medium leading-none text-muted-foreground uppercase tracking-widest mt-1">
-              {profile?.rol === 'admin' ? "ADMIN COMMAND" : "TECNICO OPERATIVO"}
+              {isAdmin ? "ADMIN COMMAND" : "TECNICO OPERATIVO"}
             </p>
           </div>
         </DropdownMenuLabel>
@@ -57,14 +57,18 @@ export function UserNav() {
               <span className="text-xs font-bold">Mi Perfil</span>
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
-            <Zap className="mr-2 h-4 w-4 text-accent" />
-            <span className="text-xs font-bold">Nivel {profile?.nivel || 1}</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
-            <Trophy className="mr-2 h-4 w-4 text-accent" />
-            <span className="text-xs font-bold">{profile?.puntos || 0} Puntos</span>
-          </DropdownMenuItem>
+          {!isAdmin && (
+            <>
+              <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
+                <Zap className="mr-2 h-4 w-4 text-accent" />
+                <span className="text-xs font-bold">Nivel {profile?.nivel || 1}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
+                <Trophy className="mr-2 h-4 w-4 text-accent" />
+                <span className="text-xs font-bold">{profile?.puntos || 0} Puntos</span>
+              </DropdownMenuItem>
+            </>
+          )}
           <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
             <Settings className="mr-2 h-4 w-4 text-accent" />
             <span className="text-xs font-bold">Configuración</span>

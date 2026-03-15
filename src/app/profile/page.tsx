@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef } from "react";
@@ -23,6 +22,8 @@ export default function ProfilePage() {
   
   const [isUpdating, setIsUpdating] = useState(false);
   const [newPhoto, setNewPhoto] = useState<string | null>(null);
+
+  const isAdmin = profile?.rol === 'admin';
 
   const handlePhotoClick = () => {
     fileInputRef.current?.click();
@@ -109,26 +110,28 @@ export default function ProfilePage() {
             <div className="mt-6 text-center">
               <h3 className="text-xl font-bold text-white">{profile?.nombre}</h3>
               <p className="text-xs text-accent font-black uppercase tracking-widest mt-1">
-                {profile?.rol === 'admin' ? "Administrador" : "Técnico Operativo"}
+                {isAdmin ? "Administrador" : "Técnico Operativo"}
               </p>
             </div>
             
-            <div className="mt-8 w-full space-y-4">
-              <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-accent" />
-                  <span className="text-xs font-bold text-white">Nivel</span>
+            {!isAdmin && (
+              <div className="mt-8 w-full space-y-4">
+                <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-accent" />
+                    <span className="text-xs font-bold text-white">Nivel</span>
+                  </div>
+                  <span className="text-sm font-black text-accent">{profile?.nivel || 1}</span>
                 </div>
-                <span className="text-sm font-black text-accent">{profile?.nivel || 1}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                <div className="flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-yellow-500" />
-                  <span className="text-xs font-bold text-white">Puntos</span>
+                <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-yellow-500" />
+                    <span className="text-xs font-bold text-white">Puntos</span>
+                  </div>
+                  <span className="text-sm font-black text-yellow-500">{profile?.puntos || 0}</span>
                 </div>
-                <span className="text-sm font-black text-yellow-500">{profile?.puntos || 0}</span>
               </div>
-            </div>
+            )}
           </Card>
 
           {/* Información y Formulario */}
@@ -174,7 +177,7 @@ export default function ProfilePage() {
                     <Shield className="h-3 w-3" /> Rol en Sistema
                   </Label>
                   <div className="h-10 px-3 flex items-center bg-white/5 border border-white/5 rounded-md text-sm text-white font-bold uppercase">
-                    {profile?.rol === 'admin' ? "Acceso Total Command" : "Acceso Operativo"}
+                    {isAdmin ? "Acceso Total Command" : "Acceso Operativo"}
                   </div>
                 </div>
               </div>
