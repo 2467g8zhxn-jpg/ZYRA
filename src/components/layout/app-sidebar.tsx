@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -9,8 +8,7 @@ import {
   ClipboardList, 
   Building2,
   Package,
-  UserCircle,
-  Zap
+  UserCircle
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
@@ -26,6 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useUser } from "@/firebase";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { ZyraLogo } from "@/components/brand/zyra-logo";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -51,13 +50,16 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarHeader className="p-4 border-b border-border">
-        <div className="flex items-center gap-2 px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
-            <Zap className="h-5 w-5 text-accent-foreground" />
+        <div className="flex items-center gap-3 px-1">
+          <ZyraLogo className="h-9 w-9 shrink-0" />
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden overflow-hidden">
+            <span className="text-xl font-black tracking-tighter text-foreground leading-none">
+              ZYRA
+            </span>
+            <span className="text-[10px] font-black text-accent tracking-[0.2em] leading-none mt-1">
+              {isAdmin ? "COMMAND" : "OPERATIVO"}
+            </span>
           </div>
-          <span className="text-xl font-bold tracking-tight text-foreground group-data-[collapsible=icon]:hidden">
-            ZYRA <span className="text-accent">{isAdmin ? "COMMAND" : "OPERATIVO"}</span>
-          </span>
         </div>
       </SidebarHeader>
       <SidebarContent>

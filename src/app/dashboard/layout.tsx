@@ -1,4 +1,3 @@
-
 "use client";
 
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
@@ -6,8 +5,8 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { UserNav } from "@/components/layout/user-nav";
 import { useUser } from "@/firebase";
-import { Zap } from "lucide-react";
 import { useI18n } from "@/components/providers/i18n-provider";
+import { ZyraLogo } from "@/components/brand/zyra-logo";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { profile } = useUser();
@@ -23,7 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <SidebarTrigger className={isAdmin ? "flex" : "hidden md:flex"} />
             <div className="h-4 w-px bg-border mx-2 hidden md:block" />
             <div className="flex items-center gap-2 md:hidden">
-              <Zap className="h-5 w-5 text-accent" />
+              <ZyraLogo className="h-7 w-7" />
               <span className="text-sm font-black tracking-tighter text-foreground">ZYRA</span>
             </div>
             <h1 className="text-xs md:text-sm font-semibold text-muted-foreground truncate hidden md:block">
