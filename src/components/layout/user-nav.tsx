@@ -11,11 +11,12 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Settings, LogOut, User, Zap, Trophy } from "lucide-react";
+import Link from "next/link";
 
 export function UserNav() {
   const { profile } = useUser();
@@ -32,8 +33,9 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-9 w-9 rounded-full border border-white/10 hover:bg-white/5">
-          <Avatar className="h-8 w-8">
+        <Button variant="ghost" className="relative h-9 w-9 rounded-full border border-white/10 hover:bg-white/5 p-0 overflow-hidden">
+          <Avatar className="h-full w-full">
+            <AvatarImage src={profile?.photoURL} alt={profile?.nombre} />
             <AvatarFallback className="bg-accent text-white font-bold text-xs">{nameInitial}</AvatarFallback>
           </Avatar>
         </Button>
@@ -49,9 +51,11 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-white/5" />
         <DropdownMenuGroup>
-          <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
-            <User className="mr-2 h-4 w-4 text-accent" />
-            <span className="text-xs font-bold">Mi Perfil</span>
+          <DropdownMenuItem asChild>
+            <Link href="/profile" className="focus:bg-white/5 cursor-pointer py-2 flex items-center w-full">
+              <User className="mr-2 h-4 w-4 text-accent" />
+              <span className="text-xs font-bold">Mi Perfil</span>
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuItem className="focus:bg-white/5 cursor-pointer py-2">
             <Zap className="mr-2 h-4 w-4 text-accent" />
