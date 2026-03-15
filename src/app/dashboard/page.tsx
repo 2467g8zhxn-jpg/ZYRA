@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useUser } from "@/firebase";
@@ -166,7 +165,7 @@ export default function DashboardPage() {
     );
   }
 
-  // Vista de Empleado (Existente)
+  // Vista de Empleado (Mobile Optimized)
   const puntos = profile?.puntos || 0;
   const nivel = profile?.nivel || 1;
   const racha = profile?.racha || 0;
@@ -175,115 +174,107 @@ export default function DashboardPage() {
   const logrosMock = profile?.logros || [];
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto font-body">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-3xl font-bold tracking-tight text-white">
-          Panel de Control: <span className="text-accent">{profile?.nombre}</span>
+    <div className="space-y-6 max-w-7xl mx-auto font-body">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+          Panel <span className="text-accent">Operativo</span>
         </h2>
-        <p className="text-muted-foreground">Progreso operativo y metas de rendimiento.</p>
+        <p className="text-xs md:text-sm text-muted-foreground">¡Hola, {profile?.nombre?.split(' ')[0]}! Este es tu avance.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-card border-white/10 overflow-hidden group hover:border-accent/50 transition-all">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-card border-white/10 overflow-hidden relative">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-3">
               <div className="p-2 rounded-lg bg-accent/20">
-                <Zap className="h-5 w-5 text-accent" />
+                <Zap className="h-4 w-4 text-accent" />
               </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Nivel {nivel}</span>
+              <Badge variant="outline" className="text-[10px] border-accent/30 text-accent font-bold">Nivel {nivel}</Badge>
             </div>
-            <div className="space-y-3">
-              <h3 className="text-3xl font-bold text-white">{Math.floor(progressPercentage)}%</h3>
-              <p className="text-xs text-muted-foreground">Progreso al nivel {nivel + 1}</p>
-              <Progress value={progressPercentage} className="h-2 bg-white/5" />
+            <div className="space-y-2">
+              <div className="flex justify-between items-end">
+                <h3 className="text-2xl font-bold text-white">{Math.floor(progressPercentage)}%</h3>
+                <span className="text-[10px] text-muted-foreground font-bold">PTS: {puntos} / {nivel * 200}</span>
+              </div>
+              <Progress value={progressPercentage} className="h-1.5 bg-white/5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-card border-white/10 overflow-hidden group hover:border-orange-500/50 transition-all">
-          <CardContent className="p-6 text-center flex flex-col items-center justify-center">
-            <div className="h-12 w-12 rounded-full bg-[#FF4500]/10 flex items-center justify-center mb-2 shadow-[0_0_15px_rgba(255,69,0,0.3)]">
-              <Flame className="h-7 w-7 text-[#FF4500]" />
+        <div className="grid grid-cols-2 gap-4 md:contents">
+          <Card className="bg-card border-white/10 flex flex-col items-center justify-center p-4">
+            <div className="h-10 w-10 rounded-full bg-[#FF4500]/10 flex items-center justify-center mb-2 shadow-[0_0_10px_rgba(255,69,0,0.2)]">
+              <Flame className="h-5 w-5 text-[#FF4500]" />
             </div>
-            <h3 className="text-3xl font-bold text-white">{racha} Días</h3>
-            <p className="text-xs font-bold text-[#FF4500] uppercase mt-1">Racha Imparable</p>
-          </CardContent>
-        </Card>
+            <h3 className="text-xl font-bold text-white">{racha}</h3>
+            <p className="text-[9px] font-bold text-[#FF4500] uppercase tracking-tighter">Días Racha</p>
+          </Card>
 
-        <StatCard
-          title="Puntos Totales"
-          value={puntos}
-          icon={Star}
-          description="Puntos Zyra ganados"
-          className="border-white/10"
-        />
-
-        <StatCard
-          title="Medallas"
-          value={logrosMock.filter((l: any) => l.completado).length}
-          icon={Trophy}
-          description="Logros desbloqueados"
-          className="border-white/10"
-        />
+          <Card className="bg-card border-white/10 flex flex-col items-center justify-center p-4">
+            <div className="h-10 w-10 rounded-full bg-yellow-500/10 flex items-center justify-center mb-2">
+              <Trophy className="h-5 w-5 text-yellow-500" />
+            </div>
+            <h3 className="text-xl font-bold text-white">{logrosMock.filter((l: any) => l.completado).length}</h3>
+            <p className="text-[9px] font-bold text-yellow-500 uppercase tracking-tighter">Logros</p>
+          </Card>
+        </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-7">
-        <Card className="md:col-span-4 bg-card border-white/10">
-          <CardHeader>
-            <CardTitle className="text-white text-lg flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-accent" /> Tus Logros
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              {logrosMock.map((logro: any) => (
-                <div 
-                  key={logro.id}
-                  className={cn(
-                    "flex items-center gap-3 p-4 rounded-xl border transition-all",
-                    logro.completado 
-                      ? "bg-[#8A2BE2]/10 border-[#8A2BE2]/30 text-white" 
-                      : "bg-white/5 border-white/5 text-muted-foreground opacity-30"
-                  )}
-                >
-                  <div className={cn(
-                    "h-8 w-8 rounded-lg flex items-center justify-center",
-                    logro.completado ? "bg-[#8A2BE2] text-white" : "bg-muted"
-                  )}>
-                    <Star className="h-4 w-4" />
-                  </div>
-                  <span className="font-semibold text-sm">{logro.nombre}</span>
-                  {logro.completado && <CheckCircle2 className="h-4 w-4 ml-auto text-[#8A2BE2]" />}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-3 bg-card border-white/10">
-          <CardHeader>
-            <CardTitle className="text-white text-lg">Historial de Puntos</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { label: "Reporte Validado", pts: "+50", date: "Hoy", color: "text-green-500" },
-              { label: "Bono de Racha", pts: "+100", date: "Ayer", color: "text-orange-500" },
-              { label: "Logro Desbloqueado", pts: "+200", date: "Hace 2 días", color: "text-[#8A2BE2]" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
-                <div className="flex items-center gap-3">
-                  <TrendingUp className={cn("h-4 w-4", item.color)} />
-                  <div>
-                    <p className="text-sm font-medium text-white">{item.label}</p>
-                    <p className="text-[10px] text-muted-foreground">{item.date}</p>
-                  </div>
-                </div>
-                <span className={cn("font-bold", item.color)}>{item.pts}</span>
+      <div className="space-y-4">
+        <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
+          <Star className="h-4 w-4 text-accent" /> Medallas Obtenidas
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          {logrosMock.length > 0 ? logrosMock.map((logro: any) => (
+            <div 
+              key={logro.id}
+              className={cn(
+                "flex items-center gap-2 p-3 rounded-xl border transition-all",
+                logro.completado 
+                  ? "bg-accent/5 border-accent/20 text-white" 
+                  : "bg-white/2 border-white/5 text-muted-foreground opacity-30"
+              )}
+            >
+              <div className={cn(
+                "h-6 w-6 rounded-md flex items-center justify-center",
+                logro.completado ? "bg-accent text-white" : "bg-muted"
+              )}>
+                <Star className="h-3 w-3" />
               </div>
-            ))}
-          </CardContent>
-        </Card>
+              <span className="font-bold text-[10px] truncate">{logro.nombre}</span>
+            </div>
+          )) : (
+            <div className="col-span-2 py-8 text-center bg-white/2 border border-dashed border-white/5 rounded-2xl">
+              <p className="text-xs text-muted-foreground">Comienza a reportar para ganar medallas.</p>
+            </div>
+          )}
+        </div>
       </div>
+
+      <Card className="bg-card border-white/10">
+        <CardHeader className="p-4 pb-2">
+          <CardTitle className="text-sm font-bold text-white uppercase tracking-widest">Historial Reciente</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0 space-y-3">
+          {[
+            { label: "Reporte Validado", pts: "+50", date: "Hoy", color: "text-emerald-500" },
+            { label: "Bono de Racha", pts: "+100", date: "Ayer", color: "text-[#FF4500]" },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5">
+              <div className="flex items-center gap-3">
+                <div className={cn("p-1.5 rounded-full bg-white/5", item.color)}>
+                  <TrendingUp className="h-3 w-3" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">{item.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{item.date}</p>
+                </div>
+              </div>
+              <span className={cn("text-xs font-black", item.color)}>{item.pts}</span>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }

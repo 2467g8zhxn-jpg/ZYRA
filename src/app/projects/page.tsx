@@ -64,18 +64,15 @@ export default function ProjectsPage() {
     imageUrl: "https://picsum.photos/seed/solar-default/800/450"
   });
 
-  // Report submission state
   const [reportContent, setReportContent] = useState("");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  // Checklist states
   const [checklist, setChecklist] = useState({
     epp_completo: false,
     herramientas_listas: false,
     seguridad_area: false
   });
 
-  // 1. First, fetch teams where the user is a member
   const userTeamsQuery = useMemoFirebase(() => {
     if (!db || !user || isAdmin) return null;
     return query(collection(db, "teams"), where("members", "array-contains", user.uid));
@@ -83,20 +80,17 @@ export default function ProjectsPage() {
 
   const { data: myTeams } = useCollection(userTeamsQuery);
 
-  // 2. Then, fetch projects assigned to those teams (or all if admin)
   const projectsQuery = useMemoFirebase(() => {
     if (!db || !profile) return null;
     if (isAdmin) {
       return collection(db, "proyectos");
     }
     
-    // For employees: filter projects assigned to any of their teams
     if (myTeams && myTeams.length > 0) {
       const teamIds = myTeams.map(t => t.id);
       return query(collection(db, "proyectos"), where("assignedTeamId", "in", teamIds));
     }
     
-    // If no teams found for employee, we return a query that will return nothing
     if (myTeams && myTeams.length === 0) {
       return query(collection(db, "proyectos"), where("assignedTeamId", "==", "no-team-found"));
     }
@@ -178,7 +172,6 @@ export default function ProjectsPage() {
 
     setLoading(true);
     try {
-      // 1. Create the Report
       await addDoc(collection(db, "reports"), {
         projectId: project.id,
         projectName: project.Pry_Nombre_Proyecto,
@@ -192,7 +185,6 @@ export default function ProjectsPage() {
         imageUrl: project.imageUrl || "https://picsum.photos/seed/report-final/800/600"
       });
 
-      // 2. Update User Project Status
       const userRef = doc(db, "users", user.uid);
       await setDoc(userRef, {
         projectStatus: {
@@ -251,16 +243,16 @@ export default function ProjectsPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-8 font-body">
+      <div className="max-w-7xl mx-auto space-y-6 font-body">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-3xl font-bold tracking-tight text-white">
-              {isAdmin ? "Gestión de Proyectos" : "Proyectos Asignados"}
+          <div className="flex flex-col gap-1">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+              {isAdmin ? "Proyectos" : "Mis Proyectos"}
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-xs md:text-sm text-muted-foreground">
               {isAdmin 
-                ? "Panel de administración para la creación y asignación de obras." 
-                : "Gestiona tus jornadas y envía reportes al finalizar."}
+                ? "Gestión y creación de obras." 
+                : "Toca un proyecto para iniciar o finalizar tu jornada."}
             </p>
           </div>
           
@@ -273,36 +265,30 @@ export default function ProjectsPage() {
               </DialogTrigger>
               <DialogContent className="bg-card border-white/10 text-white sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle className="text-accent">Nuevo Frente de Trabajo (PRY)</DialogTitle>
-                  <DialogDescription className="text-muted-foreground text-xs">
-                    Complete los campos según el diccionario de datos para el seguimiento operativo.
-                  </DialogDescription>
+                  <DialogTitle className="text-accent text-xl">Nuevo Frente de Trabajo</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-xs uppercase font-bold text-muted-foreground">Nombre del Proyecto</Label>
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground">Nombre del Proyecto</Label>
                     <Input 
-                      id="name" 
-                      placeholder="Ej: Instalación Fotovoltaica Pyme" 
-                      className="bg-white/5 border-white/10"
+                      className="bg-white/5 border-white/10 h-11"
                       value={newProject.Pry_Nombre_Proyecto}
                       onChange={(e) => setNewProject({...newProject, Pry_Nombre_Proyecto: e.target.value})}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase font-bold text-muted-foreground">Cliente (CL)</Label>
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Cliente</Label>
                       <Input 
-                        placeholder="Nombre cliente" 
-                        className="bg-white/5 border-white/10"
+                        className="bg-white/5 border-white/10 h-11"
                         value={newProject.Cl_ID}
                         onChange={(e) => setNewProject({...newProject, Cl_ID: e.target.value})}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs uppercase font-bold text-muted-foreground">Equipo (EQ)</Label>
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground">Equipo (EQ)</Label>
                       <Select onValueChange={(val) => setNewProject({...newProject, Eq_ID: val})}>
-                        <SelectTrigger className="bg-white/5 border-white/10">
+                        <SelectTrigger className="bg-white/5 border-white/10 h-11">
                           <SelectValue placeholder="Asignar" />
                         </SelectTrigger>
                         <SelectContent className="bg-card border-white/10 text-white">
@@ -313,19 +299,10 @@ export default function ProjectsPage() {
                       </Select>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase font-bold text-muted-foreground">Ubicación Operativa</Label>
-                    <Input 
-                      placeholder="Ciudad, Sector" 
-                      className="bg-white/5 border-white/10"
-                      value={newProject.ubicacion}
-                      onChange={(e) => setNewProject({...newProject, ubicacion: e.target.value})}
-                    />
-                  </div>
                 </div>
                 <DialogFooter>
                   <Button 
-                    className="bg-accent hover:bg-accent/90 text-white w-full"
+                    className="bg-accent hover:bg-accent/90 text-white w-full h-12 font-bold"
                     disabled={!newProject.Pry_Nombre_Proyecto || !newProject.Cl_ID || loading}
                     onClick={handleCreateProject}
                   >
@@ -338,143 +315,148 @@ export default function ProjectsPage() {
         </div>
 
         {displayProjects.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {displayProjects.map((project: any) => {
               const isEnCurso = profile?.projectStatus?.[project.id]?.en_curso;
               const statusColor = project.Pry_Estado === 'EnProceso' ? 'bg-emerald-500' : project.Pry_Estado === 'Finalizado' ? 'bg-primary' : 'bg-yellow-500';
 
               return (
-                <Card key={project.id} className="bg-card border-white/10 hover:border-accent/30 transition-all group overflow-hidden flex flex-col h-full shadow-lg">
-                  <div className="relative h-48 w-full overflow-hidden">
+                <Card key={project.id} className="bg-card border-white/10 overflow-hidden flex flex-col h-full shadow-lg relative group">
+                  <div className="relative h-40 w-full overflow-hidden">
                     <Image
                       src={project.imageUrl || "https://picsum.photos/seed/solar-pan/800/450"}
                       alt={project.Pry_Nombre_Proyecto}
                       fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                    <div className="absolute bottom-3 left-3 flex gap-2">
-                      <Badge className={cn("font-bold px-2 py-0.5 text-[10px] text-white", statusColor)}>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                    <div className="absolute top-3 right-3">
+                      <Badge className={cn("font-bold text-[9px] px-2 py-0.5", statusColor)}>
                         {(project.Pry_Estado || 'PENDIENTE').toUpperCase()}
                       </Badge>
                     </div>
                   </div>
                   
-                  <CardHeader className="pb-3 pt-4">
-                    <CardTitle className="text-lg font-bold text-white group-hover:text-accent transition-colors">
-                      {project.Pry_Nombre_Proyecto}
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{project.Cl_ID}</p>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4 flex-1">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <MapPin className="h-3 w-3 text-accent shrink-0" />
-                      <span className="truncate">{project.ubicacion}</span>
+                  <CardContent className="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-base font-bold text-white mb-1">{project.Pry_Nombre_Proyecto}</h3>
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase font-bold mb-3">
+                        <MapPin className="h-3 w-3 text-accent" />
+                        <span className="truncate">{project.ubicacion || "Ubicación Pendiente"}</span>
+                      </div>
                     </div>
+
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground font-bold uppercase">
-                        <span className="flex items-center gap-1"><Activity className="h-3 w-3 text-accent" /> Avance</span>
+                        <span>Avance</span>
                         <span className="text-white">{project.progreso || 0}%</span>
                       </div>
-                      <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: `${project.progreso || 0}%` }} />
-                      </div>
+                      <Progress value={project.progreso || 0} className="h-1 bg-white/5" />
                     </div>
                   </CardContent>
 
-                  <CardFooter className="pt-4 border-t border-white/5 mt-auto">
+                  <CardFooter className="p-0 border-t border-white/5">
                     {isAdmin ? (
-                      <div className="flex w-full gap-2">
-                        <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold border-white/10 hover:bg-accent/10">EQUIPO</Button>
-                        <Button variant="outline" size="sm" className="flex-1 text-[10px] font-bold border-white/10 hover:bg-primary/10">REPORTES</Button>
+                      <div className="grid grid-cols-2 w-full">
+                        <Button variant="ghost" className="h-10 text-[10px] font-bold border-r border-white/5 rounded-none uppercase">Equipo</Button>
+                        <Button variant="ghost" className="h-10 text-[10px] font-bold rounded-none uppercase text-accent">Reportes</Button>
                       </div>
                     ) : (
                       <Sheet open={isSheetOpen && selectedProject?.id === project.id} onOpenChange={(open) => {
                         setIsSheetOpen(open);
                         if (open) setSelectedProject(project);
-                        if (!open) setReportContent("");
+                        if (!open) {
+                          setReportContent("");
+                          setChecklist({ epp_completo: false, herramientas_listas: false, seguridad_area: false });
+                        }
                       }}>
                         <SheetTrigger asChild>
-                          <button className={cn(
-                            "flex items-center gap-2 text-xs font-bold group-hover:translate-x-1 transition-transform uppercase tracking-widest w-full justify-between",
-                            isEnCurso ? "text-emerald-500" : "text-accent"
-                          )}>
-                            {isEnCurso ? "Finalizar y Reportar" : "Iniciar Jornada"} <ArrowRight className="h-3 w-3" />
-                          </button>
+                          <Button 
+                            className={cn(
+                              "w-full h-12 rounded-none font-black text-xs uppercase tracking-widest",
+                              isEnCurso ? "bg-emerald-600 hover:bg-emerald-700" : "bg-accent hover:bg-accent/90"
+                            )}
+                          >
+                            {isEnCurso ? "Finalizar Jornada" : "Iniciar Jornada"}
+                            <ArrowRight className="h-3 w-3 ml-2" />
+                          </Button>
                         </SheetTrigger>
-                        <SheetContent className="bg-card border-white/10 text-white sm:max-w-md w-full overflow-y-auto">
-                          <SheetHeader className="mb-6">
-                            <SheetTitle className="text-accent text-2xl font-bold">{project.Pry_Nombre_Proyecto}</SheetTitle>
-                            <SheetDescription className="text-muted-foreground">
-                              {isEnCurso ? "Completa el reporte diario para finalizar tu jornada." : "Protocolo de verificación de seguridad y materiales."}
+                        <SheetContent side="bottom" className="bg-card border-white/10 text-white h-[90vh] rounded-t-3xl overflow-y-auto px-6">
+                          <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-6 mt-2" />
+                          <SheetHeader className="text-left mb-8">
+                            <SheetTitle className="text-accent text-2xl font-black">{project.Pry_Nombre_Proyecto}</SheetTitle>
+                            <SheetDescription className="text-muted-foreground text-xs uppercase font-bold tracking-widest">
+                              {isEnCurso ? "Cierre técnico del día" : "Checklist de seguridad obligatorio"}
                             </SheetDescription>
                           </SheetHeader>
                           
-                          <div className="space-y-8">
+                          <div className="space-y-6 pb-20">
                             {!isEnCurso ? (
-                              <>
-                                <div className="bg-white/5 border border-white/10 p-5 rounded-xl space-y-4">
-                                  <h4 className="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-tighter">
-                                    <ShieldCheck className="h-5 w-5 text-[#8A2BE2]" /> Protocolo de Seguridad
-                                  </h4>
-                                  <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                      <p className="text-xs font-semibold">EPP Completo</p>
-                                      <Switch checked={checklist.epp_completo} onCheckedChange={(v) => setChecklist({...checklist, epp_completo: v})} />
+                              <div className="space-y-6">
+                                <div className="space-y-4">
+                                  {[
+                                    { key: 'epp_completo', label: 'EPP COMPLETO (Casco, Guantes, Zapatos)' },
+                                    { key: 'seguridad_area', label: 'ÁREA DE TRABAJO DELIMITADA Y SEGURA' },
+                                    { key: 'herramientas_listas', label: 'HERRAMIENTAS EN BUEN ESTADO' },
+                                  ].map((item) => (
+                                    <div key={item.key} className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5">
+                                      <Label className="text-xs font-bold leading-tight max-w-[70%]">{item.label}</Label>
+                                      <Switch 
+                                        checked={(checklist as any)[item.key]} 
+                                        onCheckedChange={(v) => setChecklist({...checklist, [item.key]: v})} 
+                                      />
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                      <p className="text-xs font-semibold">Área Segura</p>
-                                      <Switch checked={checklist.seguridad_area} onCheckedChange={(v) => setChecklist({...checklist, seguridad_area: v})} />
-                                    </div>
-                                  </div>
+                                  ))}
                                 </div>
                                 <Button 
-                                  className="w-full bg-[#8A2BE2] hover:bg-[#8A2BE2]/90 text-white font-bold h-12"
-                                  disabled={!checklist.epp_completo || !checklist.seguridad_area || loading}
+                                  className="w-full bg-accent hover:bg-accent/90 text-white font-black h-16 text-lg rounded-2xl shadow-xl shadow-accent/20"
+                                  disabled={!checklist.epp_completo || !checklist.seguridad_area || !checklist.herramientas_listas || loading}
                                   onClick={() => handleStartDay(project)}
                                 >
-                                  {loading ? "Validando..." : "INICIAR JORNADA"}
+                                  {loading ? "Validando..." : "CONFIRMAR E INICIAR"}
                                 </Button>
-                              </>
+                              </div>
                             ) : (
                               <div className="space-y-6">
                                 <div className="space-y-4">
                                   <div className="flex items-center justify-between">
-                                    <Label className="text-xs font-bold uppercase text-muted-foreground">Descripción de Tareas</Label>
+                                    <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Resumen de Actividades</Label>
                                     <Button 
-                                      variant="ghost" 
+                                      variant="outline" 
                                       size="sm" 
-                                      className="h-7 text-[10px] text-accent font-bold gap-1 hover:bg-accent/10"
+                                      className="h-8 text-[10px] border-accent/30 text-accent font-black gap-1.5 rounded-full"
                                       onClick={() => handleAiDraft(project.Pry_Nombre_Proyecto)}
                                       disabled={isAiDrafting}
                                     >
                                       {isAiDrafting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                                      ASISTENTE AI
+                                      ASISTENTE IA
                                     </Button>
                                   </div>
                                   <Textarea 
-                                    placeholder="Escribe tus notas del día aquí..." 
-                                    className="bg-white/5 border-white/10 min-h-[150px] text-sm"
+                                    placeholder="Describe las tareas realizadas hoy..." 
+                                    className="bg-white/2 border-white/10 min-h-[180px] text-sm rounded-2xl p-4"
                                     value={reportContent}
                                     onChange={(e) => setReportContent(e.target.value)}
                                   />
                                   
-                                  <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase text-muted-foreground">Evidencia Fotográfica</Label>
-                                    <div className="aspect-video w-full rounded-lg bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent/40 transition-colors cursor-pointer">
-                                      <Camera className="h-8 w-8" />
-                                      <span className="text-xs">Subir evidencia de obra</span>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="aspect-square w-full rounded-2xl bg-white/2 border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent/40 transition-colors">
+                                      <Camera className="h-6 w-6" />
+                                      <span className="text-[9px] font-bold uppercase tracking-tighter">FOTO OBRA</span>
+                                    </div>
+                                    <div className="aspect-square w-full rounded-2xl bg-white/2 border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent/40 transition-colors">
+                                      <Camera className="h-6 w-6" />
+                                      <span className="text-[9px] font-bold uppercase tracking-tighter">FOTO MATERIAL</span>
                                     </div>
                                   </div>
                                 </div>
 
                                 <Button 
-                                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold h-12"
+                                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black h-16 text-lg rounded-2xl shadow-xl shadow-emerald-900/20"
                                   disabled={!reportContent || loading}
                                   onClick={() => handleFinishDayAndReport(project)}
                                 >
-                                  {loading ? "Procesando..." : "FINALIZAR Y ENVIAR REPORTE"}
+                                  {loading ? "Enviando..." : "FINALIZAR JORNADA"}
                                 </Button>
                               </div>
                             )}
@@ -488,15 +470,15 @@ export default function ProjectsPage() {
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+          <div className="flex flex-col items-center justify-center py-20 text-center px-6 bg-white/2 rounded-3xl border border-dashed border-white/5">
+            <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
               <Briefcase className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-bold text-white uppercase tracking-tighter">Sin proyectos asignados</h3>
-            <p className="text-sm text-muted-foreground mt-2 max-w-xs">
+            <h3 className="text-lg font-bold text-white uppercase tracking-tighter">Sin proyectos</h3>
+            <p className="text-xs text-muted-foreground mt-2 max-w-[200px]">
               {isAdmin 
-                ? "Aún no has creado ningún frente de trabajo operativo." 
-                : "No tienes proyectos vinculados a tus equipos de trabajo actuales."}
+                ? "No hay obras registradas en el sistema." 
+                : "No tienes obras asignadas para hoy."}
             </p>
           </div>
         )}
