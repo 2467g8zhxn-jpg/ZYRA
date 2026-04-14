@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <SidebarInset className="bg-background">
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4 sticky top-0 bg-background/80 backdrop-blur-md z-40">
           <div className="flex items-center gap-2 flex-1">
-            <SidebarTrigger className={isAdmin ? "flex" : "hidden md:flex"} />
+            <SidebarTrigger className="hidden md:flex" />
             <div className="h-4 w-px bg-border mx-2 hidden md:block" />
             <div className="flex items-center gap-2 md:hidden">
               <ZyraLogo className="h-7 w-7" />

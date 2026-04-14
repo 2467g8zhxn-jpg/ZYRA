@@ -354,7 +354,7 @@ export default function ProjectsPage() {
                   <Plus className="h-4 w-4" /> {t.projects.new_project}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-xl bg-card border-border">
+              <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto sm:max-w-xl bg-card border-border">
                 <DialogHeader>
                   <DialogTitle className="text-accent text-xl">{t.projects.new_project}</DialogTitle>
                 </DialogHeader>
@@ -552,7 +552,7 @@ export default function ProjectsPage() {
                               <Users className="h-3 w-3" /> {t.nav.teams}
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="sm:max-w-xs bg-card border-border">
+                          <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto sm:max-w-xs bg-card border-border">
                             <DialogHeader>
                               <DialogTitle className="text-sm font-bold uppercase tracking-widest">{t.teams.manage_leader}</DialogTitle>
                             </DialogHeader>

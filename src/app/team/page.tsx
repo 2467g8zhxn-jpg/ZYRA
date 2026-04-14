@@ -190,13 +190,13 @@ export default function TeamPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-8 font-body">
+      <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 font-body px-2 sm:px-4 md:px-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-4xl font-bold tracking-tight text-white font-headline flex items-center gap-3">
-              <UsersIcon className="h-10 w-10 text-accent" /> {isAdmin ? t.teams.title_admin : t.teams.title_op}
+          <div className="flex flex-col gap-1 md:gap-2 text-center md:text-left">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white font-headline flex items-center justify-center md:justify-start gap-2 md:gap-3">
+              <UsersIcon className="h-8 w-8 md:h-10 md:w-10 text-accent" /> {isAdmin ? t.teams.title_admin : t.teams.title_op}
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               {isAdmin ? t.teams.subtitle_admin : t.teams.subtitle_op}
             </p>
           </div>
@@ -204,18 +204,18 @@ export default function TeamPage() {
           {isAdmin && (
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-accent hover:bg-accent/90 text-white font-bold gap-2 h-12 px-6">
+                <Button className="bg-accent hover:bg-accent/90 text-white font-bold gap-2 h-11 md:h-12 px-4 md:px-6 w-full md:w-auto">
                   <Plus className="h-5 w-5" /> {t.teams.new_team}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-card border-white/10 text-white sm:max-w-xl">
+              <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto bg-card border-white/10 text-white sm:max-w-xl">
                 <DialogHeader>
                   <DialogTitle className="text-accent">{t.teams.new_team}</DialogTitle>
                   <DialogDescription>{t.teams.subtitle_admin}</DialogDescription>
                 </DialogHeader>
-                <div className="grid md:grid-cols-2 gap-6 py-4">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 py-2 md:py-4">
+                  <div className="space-y-3 md:space-y-4">
+                    <div className="space-y-1.5 md:space-y-2">
                       <Label className="text-xs uppercase font-bold text-muted-foreground">{t.teams.team_name}</Label>
                       <Input 
                         placeholder="..." 
@@ -249,9 +249,9 @@ export default function TeamPage() {
                       </Select>
                     </div>
                   </div>
-                  <div className="space-y-2 flex flex-col">
+                  <div className="space-y-1.5 md:space-y-2 flex flex-col">
                     <Label className="text-xs uppercase font-bold text-muted-foreground">{t.teams.members}</Label>
-                    <ScrollArea className="bg-white/5 border border-white/10 rounded-lg p-3 max-h-[220px]">
+                    <ScrollArea className="bg-white/5 border border-white/10 rounded-lg p-2 md:p-3 h-[200px] md:max-h-[220px]">
                       <div className="divide-y divide-white/5">
                         {validEmployees.map(emp => (
                           <div key={emp.id} className="flex items-center space-x-3 py-2.5">
@@ -273,7 +273,7 @@ export default function TeamPage() {
           )}
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {teamsLoading ? (
             <div className="col-span-full flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-accent"></div></div>
           ) : filteredTeams.length > 0 ? (
@@ -286,10 +286,10 @@ export default function TeamPage() {
                     </div>
                     <Badge variant="outline" className="text-[10px] uppercase font-bold text-accent border-accent/30">{team.status || "DISPONIBLE"}</Badge>
                   </div>
-                  <CardTitle className="text-xl font-bold text-white mt-4">{team.name}</CardTitle>
+                  <CardTitle className="text-lg md:text-xl font-bold text-white mt-3 md:mt-4">{team.name}</CardTitle>
                   <p className="text-[10px] text-accent font-bold uppercase tracking-widest">{team.type || "Instalación"}</p>
-                  <CardDescription className="text-muted-foreground flex items-center gap-2 text-xs">
-                    <Crown className="h-3 w-3 text-yellow-500" /> {t.teams.leader}: {team.leaderName}
+                  <CardDescription className="text-muted-foreground flex items-center gap-2 text-xs mt-1 md:mt-0">
+                    <Crown className="h-3 w-3 text-yellow-500 shrink-0" /> <span className="truncate">{t.teams.leader}: {team.leaderName}</span>
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -319,8 +319,8 @@ export default function TeamPage() {
                   </div>
                 </CardContent>
                 {isAdmin && (
-                  <div className="p-4 bg-white/2 border-t border-white/5">
-                    <Button variant="outline" className="w-full text-[10px] font-bold border-accent/30 text-accent uppercase" onClick={() => openEditDialog(team)}>
+                  <div className="p-3 md:p-4 bg-white/2 border-t border-white/5">
+                    <Button variant="outline" className="w-full text-xs md:text-[10px] h-10 md:h-9 font-bold border-accent/30 text-accent uppercase" onClick={() => openEditDialog(team)}>
                       Gestionar Equipo
                     </Button>
                   </div>
@@ -337,16 +337,16 @@ export default function TeamPage() {
 
         {/* Edit Team Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="bg-card border-white/10 text-white sm:max-w-xl">
+          <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto bg-card border-white/10 text-white sm:max-w-xl">
             <DialogHeader>
               <DialogTitle className="text-accent flex items-center gap-2">
                 <Settings2 className="h-5 w-5" /> Gestionar Equipo - {selectedTeam?.name}
               </DialogTitle>
               <DialogDescription>Edita los detalles del equipo, añade/elimina integrantes o cambia el líder.</DialogDescription>
             </DialogHeader>
-            <div className="grid md:grid-cols-2 gap-6 py-4">
-              <div className="space-y-4">
-                <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 py-2 md:py-4">
+              <div className="space-y-3 md:space-y-4">
+                <div className="space-y-1.5 md:space-y-2">
                   <Label className="text-xs uppercase font-bold text-muted-foreground">{t.teams.team_name}</Label>
                   <Input 
                     value={editTeamData?.name || ""} 
@@ -376,9 +376,9 @@ export default function TeamPage() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-2 flex flex-col">
+              <div className="space-y-1.5 md:space-y-2 flex flex-col mt-2 md:mt-0">
                 <Label className="text-xs uppercase font-bold text-muted-foreground">{t.teams.members}</Label>
-                <ScrollArea className="bg-white/5 border border-white/10 rounded-lg p-3 max-h-[220px]">
+                <ScrollArea className="bg-white/5 border border-white/10 rounded-lg p-2 md:p-3 h-[200px] md:max-h-[220px]">
                   <div className="divide-y divide-white/5">
                     {validEmployees.map(emp => (
                       <div key={emp.id} className="flex items-center space-x-3 py-2.5">

@@ -263,7 +263,7 @@ function ReportsContent() {
       )}
 
       <Dialog open={!!selectedReportId} onOpenChange={(open) => !open && setSelectedReportId(null)}>
-        <DialogContent className="bg-card border-border text-foreground sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] bg-card border-border text-foreground sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           {selectedReport && (
             <>
               <DialogHeader>

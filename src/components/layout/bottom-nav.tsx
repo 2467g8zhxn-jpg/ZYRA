@@ -6,7 +6,10 @@ import {
   LayoutDashboard, 
   Briefcase, 
   Users, 
-  ClipboardList
+  ClipboardList,
+  Building2,
+  Package,
+  UserCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/firebase";
@@ -18,9 +21,15 @@ export function BottomNav() {
   const { t } = useI18n();
   const isAdmin = profile?.rol === 'admin';
 
-  if (isAdmin) return null;
-
-  const navItems = [
+  const navItems = isAdmin ? [
+    { title: t.nav.dashboard, icon: LayoutDashboard, href: "/dashboard" },
+    { title: t.nav.projects, icon: Briefcase, href: "/projects" },
+    { title: t.nav.clients, icon: Building2, href: "/clients" },
+    { title: t.nav.teams, icon: Users, href: "/team" },
+    { title: t.nav.employees, icon: UserCircle, href: "/employees" },
+    { title: t.nav.reports, icon: ClipboardList, href: "/reports" },
+    { title: t.nav.materials, icon: Package, href: "/materials" },
+  ] : [
     { title: t.nav.dashboard, icon: LayoutDashboard, href: "/dashboard" },
     { title: t.nav.projects, icon: Briefcase, href: "/projects" },
     { title: t.nav.teams, icon: Users, href: "/team" },
@@ -28,8 +37,8 @@ export function BottomNav() {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-t border-white/5 pb-safe">
-      <nav className="flex items-center justify-around h-16 px-2">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-white/10 pb-safe shadow-2xl">
+      <nav className="flex items-center h-[72px] px-2 overflow-x-auto overflow-y-hidden snap-x hide-scrollbar">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -37,21 +46,33 @@ export function BottomNav() {
               key={item.href} 
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 w-full h-full transition-all",
+                "flex-none flex flex-col items-center justify-center gap-1.5 min-w-[72px] sm:min-w-[80px] h-full transition-all relative snap-center",
                 isActive ? "text-accent" : "text-muted-foreground hover:text-white"
               )}
             >
-              <item.icon className={cn("h-5 w-5", isActive && "scale-110")} />
-              <span className="text-[10px] font-bold uppercase tracking-tighter">
+              <div className={cn(
+                "p-2 rounded-xl transition-all duration-300",
+                isActive ? "bg-accent/20" : "bg-transparent"
+              )}>
+                <item.icon className={cn("h-[22px] w-[22px]", isActive && "scale-110")} />
+              </div>
+              <span className="text-[9px] font-bold uppercase tracking-widest truncate max-w-[64px] text-center">
                 {item.title}
               </span>
-              {isActive && (
-                <div className="absolute bottom-1 h-1 w-1 rounded-full bg-accent" />
-              )}
             </Link>
           );
         })}
       </nav>
+      {/* Estilo para ocultar la barra de scroll en navegadores webkit */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}} />
     </div>
   );
 }

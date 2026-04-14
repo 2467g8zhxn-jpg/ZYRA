@@ -259,7 +259,7 @@ export default function EmployeesPage() {
                 <Plus className="h-4 w-4" /> {t.employees.register}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg bg-card border-border">
+            <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto sm:max-w-lg bg-card border-border">
               {!showCredentials ? (
                 <>
                   <DialogHeader>
@@ -350,9 +350,9 @@ export default function EmployeesPage() {
 
         <Card className="shadow-2xl overflow-hidden border-border">
           <CardHeader className="border-b border-border bg-muted/30">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <CardTitle className="text-foreground text-lg font-bold">{t.employees.payroll}</CardTitle>
-              <div className="relative w-64">
+              <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder={t.common.search} className="pl-10 bg-background border-border text-xs h-9 text-foreground" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
@@ -446,7 +446,7 @@ export default function EmployeesPage() {
         </Card>
 
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="bg-card border-border sm:max-w-md">
+          <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto bg-card border-border sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-accent flex items-center gap-2">
                 <UserCircle className="h-5 w-5" /> Perfil del Técnico

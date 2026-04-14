@@ -215,7 +215,7 @@ export default function MaterialsPage() {
                 <Plus className="h-4 w-4" /> {t.materials.new_item}
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border-border">
+            <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto bg-card border-border sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle className="text-accent">{t.materials.new_item}</DialogTitle>
                 <DialogDescription>Añade un nuevo recurso al catálogo general.</DialogDescription>
@@ -268,9 +268,9 @@ export default function MaterialsPage() {
           <TabsContent value="inventory" className="mt-0">
             <Card className="bg-card border-border shadow-2xl overflow-hidden">
               <CardHeader className="border-b border-border bg-muted/20">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <CardTitle className="text-foreground text-lg font-bold">{t.materials.general_catalog}</CardTitle>
-                  <div className="relative w-64">
+                  <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input placeholder={t.common.search} className="pl-10 bg-background border-border text-xs h-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                   </div>
@@ -383,7 +383,7 @@ export default function MaterialsPage() {
 
         {/* Edit Template Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="bg-card border-border sm:max-w-md">
+          <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto bg-card border-border sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-accent flex items-center gap-2">
                 <Settings2 className="h-5 w-5" /> 

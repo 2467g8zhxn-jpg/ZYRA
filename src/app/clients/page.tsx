@@ -170,7 +170,7 @@ export default function ClientsPage() {
                 <Plus className="h-4 w-4" /> {t.clients.register}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg bg-card border-border">
+            <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto sm:max-w-lg bg-card border-border">
               <DialogHeader>
                 <DialogTitle className="text-accent">{t.clients.register}</DialogTitle>
                 <DialogDescription>
@@ -246,9 +246,9 @@ export default function ClientsPage() {
 
         <Card className="shadow-2xl overflow-hidden border-border">
           <CardHeader className="border-b border-border bg-muted/20">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <CardTitle className="text-foreground text-lg font-bold">{t.clients.catalog}</CardTitle>
-              <div className="relative w-64">
+              <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder={t.common.search} 
@@ -336,7 +336,7 @@ export default function ClientsPage() {
 
         {/* Dialog de Proyectos por Cliente */}
         <Dialog open={isProjectsDialogOpen} onOpenChange={setIsProjectsDialogOpen}>
-          <DialogContent className="sm:max-w-2xl bg-card border-border max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogContent className="w-[95vw] sm:max-w-2xl bg-card border-border max-h-[85vh] overflow-hidden flex flex-col">
             <DialogHeader className="border-b border-border pb-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-lg bg-accent/10">
