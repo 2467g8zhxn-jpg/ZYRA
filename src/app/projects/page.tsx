@@ -426,9 +426,9 @@ export default function ProjectsPage() {
     const currentUid = user.uid;
     const currentProfileName = profile?.nombre || "Técnico";
 
-    // Calculate initial progress based on what's marked before starting
-    const totalItems = opChecklistItems.length;
-    const finishedItems = opChecklistItems.filter(i => i.done).length;
+    const currentTasks = project.checklistItems || [];
+    const totalItems = currentTasks.length;
+    const finishedItems = currentTasks.filter((i:any) => i.done).length;
     const calculatedProgress = totalItems > 0 ? Math.round((finishedItems / totalItems) * 100) : project.progreso || 0;
 
     setLoading(true);
@@ -440,7 +440,7 @@ export default function ProjectsPage() {
           checklist_completado: true,
           timestamp_inicio: new Date().toISOString(),
           en_curso: true,
-          checklistSnapshot: opChecklistItems
+          checklistSnapshot: currentTasks
         }
       }
     };
@@ -456,13 +456,13 @@ export default function ProjectsPage() {
             employeeName: currentProfileName,
             content: "Inicio de jornada con verificación de materiales.",
             progressAtTime: calculatedProgress,
-            checklistSnapshot: opChecklistItems,
+            checklistSnapshot: currentTasks,
             timestamp: new Date().toISOString(),
             createdAt: serverTimestamp(),
             type: 'start_day_sync' // Internal tag to identify this as a sync report
           });
-        } catch (reportErr) {
-          console.warn("Initial sync report failed:", reportErr);
+        } catch (reportErr: any) {
+          console.warn("Initial sync report failed due to permissions:", reportErr.message);
         }
 
         // 2. Attempt a MINIMAL update to projects (might fail due to permissions, but we try)
@@ -472,27 +472,36 @@ export default function ProjectsPage() {
             Pry_Estado: "EnProceso",
             progreso: calculatedProgress
           });
-        } catch (projErr) {
-          console.warn("Minimal sync failed:", projErr);
+        } catch (projErr: any) {
+          console.warn("Minimal sync failed due to permissions:", projErr.message);
         }
 
         toast({ title: t.projects.day_started, description: `Iniciado al ${calculatedProgress}% y sincronizado.` });
         setIsSheetOpen(false);
       })
       .catch((e) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userRef.path, operation: 'update' }));
+        console.warn("User update permission denied:", e.message);
+        toast({ variant: "destructive", title: "Error de Permisos", description: "Firebase requiere actualización de reglas de seguridad para continuar." });
       })
       .finally(() => setLoading(false));
   };
 
-  function handleToggleOpItem(idx: number) {
-    setOpChecklistItems(prev => {
-      const updated = [...prev];
-      if (updated[idx]) {
-        updated[idx] = { ...updated[idx], done: !updated[idx].done };
-      }
-      return updated;
-    });
+  async function handleToggleOpItem(project: any, idx: number) {
+    if (!db) return;
+    const currentTasks = [...(project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems)];
+    if (currentTasks[idx]) {
+      currentTasks[idx] = { ...currentTasks[idx], done: !currentTasks[idx].done };
+    }
+    
+    setOpChecklistItems(currentTasks);
+
+    try {
+      await updateDoc(doc(db, "proyectos", project.id), {
+        checklistItems: currentTasks
+      });
+    } catch (e) {
+      console.error("Error toggling cooperative item", e);
+    }
   }
 
   const handleFinishDayAndReport = async (project: any) => {
@@ -500,9 +509,9 @@ export default function ProjectsPage() {
     setLoading(true);
 
     try {
-      // Calculate progress based on completion of checklist items
-      const totalItems = opChecklistItems.length;
-      const finishedItems = opChecklistItems.filter(i => i.done).length;
+      const currentTasks = project.checklistItems || [];
+      const totalItems = currentTasks.length;
+      const finishedItems = currentTasks.filter((i:any) => i.done).length;
       const calculatedProgress = totalItems > 0 ? Math.round((finishedItems / totalItems) * 100) : project.progreso || 0;
 
       const currentUid = user.uid;
@@ -538,7 +547,7 @@ export default function ProjectsPage() {
         createdAt: serverTimestamp(),
         photoEvidence: reportPhotos,
         progressAtTime: calculatedProgress,
-        checklistSnapshot: opChecklistItems
+        checklistSnapshot: currentTasks
       };
       // 1. Create Report in "reports" collection
       try {
@@ -789,8 +798,9 @@ export default function ProjectsPage() {
                       setIsSheetOpen(o); 
                       if (o) { 
                         setSelectedProject(project); 
-                        // Load items from the LATEST VIRTUAL progress instead of the blocked database record
-                        let currentTasks = latestReport?.checklistSnapshot || project.checklistItems || [];
+                        
+                        let currentTasks = project.checklistItems || [];
+                        let needsUpdate = false;
                         
                         // If no previous tasks, fallback to the Admin predefined checklist template
                         if (currentTasks.length === 0 && checklistTemplates) {
@@ -801,16 +811,22 @@ export default function ProjectsPage() {
                               name: typeof it === 'string' ? it : (it.name || 'Tarea'), 
                               done: false 
                             }));
+                            needsUpdate = true;
                           }
                         }
 
                         // If NOT in course (meaning we are about to start the day), force all items to be unchecked
                         // so the employee MUST verify them today.
-                        if (!isEnCurso) {
+                        if (!isEnCurso && currentTasks.some((t:any) => t.done)) {
                           currentTasks = currentTasks.map((t: any) => ({ ...t, done: false }));
+                          needsUpdate = true;
                         }
 
-                        setOpChecklistItems(currentTasks); 
+                        setOpChecklistItems(currentTasks);
+
+                        if (needsUpdate && db) {
+                          updateDoc(doc(db, "proyectos", project.id), { checklistItems: currentTasks }).catch(e => console.error("Sync error", e));
+                        }
                       } 
                     }}>
                       <SheetTrigger asChild><Button className={cn("w-full h-12 rounded-none font-bold text-white", isEnCurso ? "bg-emerald-600" : "bg-accent")}>{isEnCurso ? "Reportar Avance" : "Iniciar Día"}</Button></SheetTrigger>
@@ -827,17 +843,17 @@ export default function ProjectsPage() {
                             <div className="space-y-4">
                               <Label className="text-xs font-black uppercase tracking-widest text-accent">Verificación de Tareas / Materiales</Label>
                               <div className="grid gap-3">
-                                {opChecklistItems.length > 0 ? (
-                                  opChecklistItems.map((item, idx) => (
+                                {((project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems) || []).length > 0 ? (
+                                  ((project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems) || []).map((item: any, idx: number) => (
                                     <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-accent/30 transition-all">
                                       <div className="flex items-center gap-3">
                                         <Checkbox 
-                                          id={`task-${idx}`} 
+                                          id={`task-${project.id}-${idx}`} 
                                           checked={item.done} 
-                                          onCheckedChange={() => handleToggleOpItem(idx)} 
+                                          onCheckedChange={() => handleToggleOpItem(project, idx)} 
                                           className="h-5 w-5 border-white/20 data-[state=checked]:bg-accent data-[state=checked]:border-accent" 
                                         />
-                                        <label htmlFor={`task-${idx}`} className={cn("text-sm font-bold transition-all", item.done ? "text-muted-foreground line-through" : "text-white")}>
+                                        <label htmlFor={`task-${project.id}-${idx}`} className={cn("text-sm font-bold transition-all", item.done ? "text-muted-foreground line-through" : "text-white")}>
                                           {item.name}
                                         </label>
                                       </div>
@@ -859,10 +875,10 @@ export default function ProjectsPage() {
                                 </div>
                                 <Button 
                                   onClick={() => handleStartDay(project)} 
-                                  disabled={opChecklistItems.length > 0 && !opChecklistItems.every(i => i.done)}
+                                  disabled={((project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems) || []).length > 0 && !((project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems) || []).every((i:any) => i.done)}
                                   className="w-full h-16 bg-accent hover:bg-accent/90 text-white font-black text-lg rounded-2xl shadow-xl shadow-accent/20 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none transition-all"
                                 >
-                                  {opChecklistItems.length > 0 && !opChecklistItems.every(i => i.done) ? "COMPLETA EL CHECKLIST PARA INICIAR" : "CONFIRMAR E INICIAR JORNADA"}
+                                  {((project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems) || []).length > 0 && !((project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems) || []).every((i:any) => i.done) ? "COMPLETA EL CHECKLIST PARA INICIAR" : "CONFIRMAR E INICIAR JORNADA"}
                                 </Button>
                               </div>
                             ) : (
