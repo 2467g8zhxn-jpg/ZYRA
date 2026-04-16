@@ -31,7 +31,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { doc, collection, addDoc, query, where, serverTimestamp, updateDoc, deleteDoc, getDoc, setDoc } from "firebase/firestore";
+import { doc, collection, addDoc, query, where, serverTimestamp, updateDoc, deleteDoc, getDoc, setDoc, increment, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -115,6 +115,7 @@ export default function ProjectsPage() {
   const [reportContent, setReportContent] = useState("");
   const [reportPhotos, setReportPhotos] = useState<{ name: string; dataUrl: string }[]>([]);
   const [opChecklistItems, setOpChecklistItems] = useState<{ name: string; done: boolean }[]>([]);
+  const [opProjectMaterials, setOpProjectMaterials] = useState<{ id?: string, name: string; quantity: number; done: boolean }[]>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   // --- Notification Helpers ---
@@ -206,12 +207,12 @@ export default function ProjectsPage() {
   const filteredProjects = useMemo(() => {
     if (!firestoreProjects) return [];
     return firestoreProjects.filter((p: any) => {
-      const matchesSearch = searchTerm === "" || 
-        p.Pry_Nombre_Proyecto?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      const matchesSearch = searchTerm === "" ||
+        p.Pry_Nombre_Proyecto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.clientName?.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const isStatusMatch = statusFilter === "all" || p.Pry_Estado === statusFilter;
-      
+
       return matchesSearch && isStatusMatch;
     });
   }, [firestoreProjects, searchTerm, statusFilter]);
@@ -223,7 +224,7 @@ export default function ProjectsPage() {
   const reportsQuery = useMemoFirebase(() => {
     if (!db || !profile) return null;
     if (isAdmin) return collection(db, "reports");
-    
+
     // Technicians see reports generated for their assigned teams
     if (myTeams && myTeams.length > 0) {
       const teamIds = myTeams.map(t => t.id);
@@ -425,21 +426,57 @@ export default function ProjectsPage() {
     setOpChecklistItems(updated);
   };
 
+  async function handleToggleOpMaterial(project: any, idx: number) {
+    if (!db) return;
+    const currentMaterials = [...(project.projectMaterials?.length > 0 ? project.projectMaterials : opProjectMaterials)];
+    if (currentMaterials[idx]) {
+      currentMaterials[idx] = { ...currentMaterials[idx], done: !currentMaterials[idx].done };
+    }
+
+    setOpProjectMaterials(currentMaterials);
+
+    try {
+      await updateDoc(doc(db, "proyectos", project.id), {
+        projectMaterials: currentMaterials
+      });
+    } catch (e) {
+      console.error("Error toggling cooperative material", e);
+    }
+  }
+
+  async function handleUpdateOpMaterialQuantity(project: any, idx: number, qty: number) {
+    if (!db) return;
+    const currentMaterials = [...(project.projectMaterials?.length > 0 ? project.projectMaterials : opProjectMaterials)];
+    if (currentMaterials[idx]) {
+      currentMaterials[idx] = { ...currentMaterials[idx], takenQuantity: qty };
+    }
+
+    setOpProjectMaterials(currentMaterials);
+
+    try {
+      await updateDoc(doc(db, "proyectos", project.id), {
+        projectMaterials: currentMaterials
+      });
+    } catch (e) {
+      console.error("Error updating material", e);
+    }
+  }
+
   const handleStartDay = async (project: any) => {
     if (!user?.uid || !db) return;
-    
+
     const currentUid = user.uid;
     const currentProfileName = profile?.nombre || "Técnico";
 
     const currentTasks = project.checklistItems || [];
     const totalItems = currentTasks.length;
-    const finishedItems = currentTasks.filter((i:any) => i.done).length;
+    const finishedItems = currentTasks.filter((i: any) => i.done).length;
     const checklistProgress = totalItems > 0 ? Math.round((finishedItems / totalItems) * 100) : 0;
     const projectProgresoOriginal = project.progreso || 0;
 
     setLoading(true);
 
-    const assignedTeam = teams?.find((t:any) => t.id === project.assignedTeamId);
+    const assignedTeam = teams?.find((t: any) => t.id === project.assignedTeamId);
     let targetUids = [currentUid];
     if (assignedTeam) {
       targetUids = Array.from(new Set([
@@ -458,7 +495,7 @@ export default function ProjectsPage() {
             timestamp_inicio: new Date().toISOString(),
           }
         });
-      } catch(e) {}
+      } catch (e) { }
 
       // Generar UN reporte inicial para todo el equipo para el TimeTracking y Visibilidad (Todo usuario autenticado puede instertar en 'reports')
       await addDoc(collection(db, "reports"), {
@@ -482,12 +519,12 @@ export default function ProjectsPage() {
         await updateDoc(projectRef, {
           Pry_Estado: "EnProceso"
         });
-      } catch (projErr) {}
+      } catch (projErr) { }
 
       toast({ title: t.projects.day_started, description: `Jornada iniciada para todo el equipo.` });
       setIsSheetOpen(false);
-    } catch(e:any) {
-        toast({ variant: "destructive", title: "Error", description: "Ocurrió un problema al iniciar la jornada." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: "Ocurrió un problema al iniciar la jornada." });
     } finally {
       setLoading(false);
     }
@@ -499,7 +536,7 @@ export default function ProjectsPage() {
     if (currentTasks[idx]) {
       currentTasks[idx] = { ...currentTasks[idx], done: !currentTasks[idx].done };
     }
-    
+
     setOpChecklistItems(currentTasks);
 
     try {
@@ -513,7 +550,7 @@ export default function ProjectsPage() {
 
   const handleFinishDayAndReport = async (project: any) => {
     if (!user?.uid || !db || !profile) return;
-    
+
     if (reportPhotos.length === 0) {
       toast({ title: "Faltan Fotos", description: "Debes subir al menos una foto de evidencia obligatoriamente para finalizar.", variant: "destructive" });
       return;
@@ -524,12 +561,12 @@ export default function ProjectsPage() {
     try {
       const currentTasks = project.checklistItems || [];
       const totalItems = currentTasks.length;
-      const finishedItems = currentTasks.filter((i:any) => i.done).length;
+      const finishedItems = currentTasks.filter((i: any) => i.done).length;
       const checklistProgress = totalItems > 0 ? Math.round((finishedItems / totalItems) * 100) : 0;
-      
+
       const currentUid = user.uid;
       const currentProfile = profile;
-      const assignedTeam = teams?.find((t:any) => t.id === project.assignedTeamId);
+      const assignedTeam = teams?.find((t: any) => t.id === project.assignedTeamId);
       let targetUids = [currentUid];
 
       if (assignedTeam) {
@@ -564,12 +601,30 @@ export default function ProjectsPage() {
         checklistSnapshot: currentTasks
       };
 
-      // Crear un SÓLO reporte para todo el equipo (La query de reportes se encargará de mostrarlo a todos basado en assignedTeamId)
-      await addDoc(collection(db, "reports"), {
-        ...baseReportData,
-        employeeId: currentUid,
-        employeeName: currentProfile.nombre || "Técnico Zyra",
-      }).catch(e => console.warn(e));
+      // Revisar si existe un reporte rechazado para actualizarlo en lugar de crear uno nuevo saltándose el historial duplicado
+      try {
+        const q = query(collection(db, "reports"), where("projectId", "==", project.id), where("status", "==", "Rechazado"));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+          const docId = snapshot.docs[0].id;
+          await updateDoc(doc(db, "reports", docId), {
+            ...baseReportData,
+            employeeId: currentUid,
+            employeeName: currentProfile.nombre || "Técnico Zyra",
+            status: "Pendiente" // Se vuelve a mandar a revisión
+          });
+        } else {
+          // Crear un SÓLO reporte para todo el equipo si no había uno rechazado previo
+          await addDoc(collection(db, "reports"), {
+            ...baseReportData,
+            employeeId: currentUid,
+            employeeName: currentProfile.nombre || "Técnico Zyra",
+          });
+        }
+      } catch (e) {
+        console.warn(e);
+      }
 
       // Cambiamos estado de PORYECTO a 'EnRevision' para TODO el equipo
       try {
@@ -588,10 +643,10 @@ export default function ProjectsPage() {
         const newPoints = (currentProfile.puntos || 0) + 50;
         const newLevel = newPoints >= (currentProfile.level || 1) * 200 ? (currentProfile.level || 1) + 1 : (currentProfile.level || 1);
         await updateDoc(userRef, { workingOn: null, puntos: newPoints, level: newLevel });
-      } catch (e) {}
+      } catch (e) { }
 
       toast({ title: t.common.success, description: "Reportes generados para el equipo y enviando a aprobación." });
-      
+
       setIsSheetOpen(false);
       setReportContent("");
       setReportPhotos([]);
@@ -660,13 +715,13 @@ export default function ProjectsPage() {
         {isAdmin && (
           <div className="flex flex-col sm:flex-row gap-4 bg-muted/20 p-4 rounded-xl border border-border">
             <div className="relative flex-1">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-               <Input 
-                 placeholder="Buscar por proyecto o cliente (Ej. Sofia)..." 
-                 className="pl-10 h-10 bg-background border-border text-foreground"
-                 value={searchTerm}
-                 onChange={(e) => setSearchTerm(e.target.value)}
-               />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por proyecto o cliente (Ej. Sofia)..."
+                className="pl-10 h-10 bg-background border-border text-foreground"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
             <div className="w-full sm:w-48">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -679,6 +734,7 @@ export default function ProjectsPage() {
                   <SelectItem value="EnProceso">En Proceso</SelectItem>
                   <SelectItem value="EnRevision">En Revisión</SelectItem>
                   <SelectItem value="Finalizado">Finalizado</SelectItem>
+                  <SelectItem value="Rechazado">Rechazado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -687,7 +743,7 @@ export default function ProjectsPage() {
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredProjects?.map((project: any) => {
-            const isEnCurso = project.Pry_Estado === 'EnProceso';
+            const isEnCurso = project.Pry_Estado === 'EnProceso' || project.Pry_Estado === 'Rechazado';
             const displayStatus = project.Pry_Estado || 'Pendiente';
             const displayProgress = project.progreso || 0;
             const assignedTeam = teams?.find(t => t.id === project.assignedTeamId);
@@ -698,10 +754,11 @@ export default function ProjectsPage() {
                   <Image src={project.imageUrl || "https://picsum.photos/seed/solar/800/450"} alt="" fill className="object-cover" />
                   <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
                     <Badge className={cn(
-                      "font-bold uppercase tracking-widest text-white border-none", 
-                      displayStatus === 'Finalizado' ? "bg-emerald-500" : 
-                      displayStatus === 'EnRevision' ? "bg-orange-500" :
-                      displayStatus === 'EnProceso' ? "bg-accent" : "bg-yellow-500"
+                      "font-bold uppercase tracking-widest text-white border-none",
+                      displayStatus === 'Finalizado' ? "bg-emerald-500" :
+                        displayStatus === 'EnRevision' ? "bg-orange-500" :
+                          displayStatus === 'Rechazado' ? "bg-red-500" :
+                            displayStatus === 'EnProceso' ? "bg-accent" : "bg-yellow-500"
                     )}>
                       {displayStatus === "EnRevision" ? "EN REVISIÓN" : displayStatus}
                     </Badge>
@@ -769,35 +826,38 @@ export default function ProjectsPage() {
                       <CheckCircle2 className="h-4 w-4 mr-2" /> A la espera de aprobación
                     </Button>
                   ) : (
-                    <Sheet open={isSheetOpen && selectedProject?.id === project.id} onOpenChange={(o) => { 
-                      setIsSheetOpen(o); 
-                      if (o) { 
-                        setSelectedProject(project); 
-                        
+                    <Sheet open={isSheetOpen && selectedProject?.id === project.id} onOpenChange={(o) => {
+                      setIsSheetOpen(o);
+                      if (o) {
+                        setSelectedProject(project);
+
                         let currentTasks = project.checklistItems || [];
+                        let currentMaterials = project.projectMaterials || [];
                         let needsUpdate = false;
-                        
-                        // If no previous tasks, fallback to the Admin predefined checklist template
-                        if (currentTasks.length === 0 && checklistTemplates) {
+
+                        // If no previous materials, fallback to the Admin predefined checklist template
+                        if (currentMaterials.length === 0 && checklistTemplates) {
                           const templateKey = project.serviceType === 'Mantenimiento' ? 'Mantenimiento' : 'Instalación';
                           const template = checklistTemplates.find(c => c.id === templateKey);
-                          if (template?.items) {
-                            currentTasks = template.items.map((it: any) => ({ 
-                              name: typeof it === 'string' ? it : (it.name || 'Tarea'), 
-                              done: false 
+
+                          if (template?.materials) {
+                            currentMaterials = template.materials.map((m: any) => ({
+                              ...m, done: false, takenQuantity: 0
                             }));
                             needsUpdate = true;
                           }
                         }
 
-                        setOpChecklistItems(currentTasks);
+                        setOpProjectMaterials(currentMaterials);
 
                         if (needsUpdate && db) {
-                          updateDoc(doc(db, "proyectos", project.id), { checklistItems: currentTasks }).catch(e => console.error("Sync error", e));
+                          updateDoc(doc(db, "proyectos", project.id), {
+                            projectMaterials: currentMaterials
+                          }).catch(e => console.error("Sync error", e));
                         }
-                      } 
+                      }
                     }}>
-                      <SheetTrigger asChild><Button className={cn("w-full h-12 rounded-none font-bold text-white", isEnCurso ? "bg-emerald-600" : "bg-accent")}>{isEnCurso ? "Reportar Avance" : "Iniciar Día"}</Button></SheetTrigger>
+                      <SheetTrigger asChild><Button className={cn("w-full h-12 rounded-none font-bold text-white", project.Pry_Estado === 'Rechazado' ? "bg-red-500 hover:bg-red-600" : isEnCurso ? "bg-emerald-600" : "bg-accent")}>{project.Pry_Estado === 'Rechazado' ? "Corregir Reporte" : isEnCurso ? "Reportar Avance" : "Iniciar Día"}</Button></SheetTrigger>
                       <SheetContent side="bottom" className="h-[90vh] overflow-y-auto w-full bg-card border-t border-white/10 p-0">
                         <div className="max-w-xl mx-auto pb-10">
                           <SheetHeader className="p-6 border-b border-white/5 bg-accent/5">
@@ -805,48 +865,73 @@ export default function ProjectsPage() {
                               <ClipboardList className="h-5 w-5" /> Reportar Avance - {project.Pry_Nombre_Proyecto}
                             </SheetTitle>
                           </SheetHeader>
-                          
+
                           <div className="space-y-8 p-6">
-                            {/* Checklist always visible for verification */}
-                            <div className="space-y-4">
-                              <Label className="text-xs font-black uppercase tracking-widest text-accent">Verificación de Tareas / Materiales</Label>
-                              <div className="grid gap-3">
-                                {((project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems) || []).length > 0 ? (
-                                  ((project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems) || []).map((item: any, idx: number) => (
-                                    <div key={idx} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-accent/30 transition-all">
-                                      <div className="flex items-center gap-3">
-                                        <Checkbox 
-                                          id={`task-${project.id}-${idx}`} 
-                                          checked={item.done} 
-                                          onCheckedChange={() => handleToggleOpItem(project, idx)} 
-                                          className="h-5 w-5 border-white/20 data-[state=checked]:bg-accent data-[state=checked]:border-accent" 
-                                        />
-                                        <label htmlFor={`task-${project.id}-${idx}`} className={cn("text-sm font-bold transition-all", item.done ? "text-muted-foreground line-through" : "text-white")}>
-                                          {item.name}
-                                        </label>
-                                      </div>
-                                      <Badge variant="outline" className={cn("text-[8px] uppercase font-black", item.done ? "text-emerald-500 border-emerald-500/30" : "text-orange-400 border-orange-400/30")}>
-                                        {item.done ? "LISTO" : "PENDIENTE"}
-                                      </Badge>
-                                    </div>
-                                  ))
-                                ) : (
-                                  <p className="text-xs text-muted-foreground italic text-center py-4">No hay tareas asignadas a este proyecto.</p>
-                                )}
+                            {!isEnCurso && (
+                              <div className="space-y-8">
+                                {/* Materiales Checklist */}
+                                <div className="space-y-4">
+                                  <Label className="text-xs font-black uppercase tracking-widest text-emerald-400">1. Lista de Materiales a Llevar</Label>
+                                  <div className="grid gap-3">
+                                    {((project.projectMaterials?.length > 0 ? project.projectMaterials : opProjectMaterials) || []).length > 0 ? (
+                                      ((project.projectMaterials?.length > 0 ? project.projectMaterials : opProjectMaterials) || []).map((mat: any, idx: number) => {
+                                        const minQuantityReqMet = mat.takenQuantity >= mat.quantity;
+                                        return (
+                                          <div key={`mat-${idx}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 gap-4">
+                                            <div className="flex items-center gap-3">
+                                              <Checkbox
+                                                id={`mat-${project.id}-${idx}`}
+                                                checked={mat.done}
+                                                onCheckedChange={() => handleToggleOpMaterial(project, idx)}
+                                                className="h-5 w-5 border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                                              />
+                                              <div className="flex flex-col">
+                                                <label htmlFor={`mat-${project.id}-${idx}`} className={cn("text-sm font-bold transition-all", mat.done ? "text-emerald-400" : "text-white")}>
+                                                  {mat.name}
+                                                </label>
+                                                <span className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Requerido: {mat.quantity} unidades</span>
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                              <Input
+                                                type="number"
+                                                min={mat.quantity}
+                                                value={mat.takenQuantity || 0}
+                                                onChange={(e) => handleUpdateOpMaterialQuantity(project, idx, parseInt(e.target.value) || 0)}
+                                                className="w-16 h-10 bg-black/20 border-white/10 text-center font-bold font-mono"
+                                              />
+                                              <Badge variant="outline" className={cn("text-[8px] uppercase font-black w-20 justify-center h-10", mat.done && minQuantityReqMet ? "text-emerald-500 border-emerald-500/30 bg-emerald-500/10" : "text-orange-400 border-orange-400/30 bg-orange-500/10")}>
+                                                {mat.done && minQuantityReqMet ? "LISTO" : "FALTA"}
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                        );
+                                      })
+                                    ) : (
+                                      <p className="text-xs text-muted-foreground italic text-center py-4">No hay materiales asignados a este proyecto.</p>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
+                            )}
 
                             {!isEnCurso ? (
                               <div className="space-y-6 pt-4 border-t border-white/5">
                                 <div className="p-6 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-center">
                                   <p className="text-sm text-orange-500 font-bold">Verifica todos los puntos anteriores para iniciar jornada.</p>
                                 </div>
-                                <Button 
-                                  onClick={() => handleStartDay(project)} 
-                                  disabled={((project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems) || []).length > 0 && !((project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems) || []).every((i:any) => i.done)}
+                                <Button
+                                  onClick={() => handleStartDay(project)}
+                                  disabled={
+                                    (((project.projectMaterials?.length > 0 ? project.projectMaterials : opProjectMaterials) || []).length > 0 && !((project.projectMaterials?.length > 0 ? project.projectMaterials : opProjectMaterials) || []).every((i: any) => i.done && i.takenQuantity >= i.quantity))
+                                  }
                                   className="w-full h-16 bg-accent hover:bg-accent/90 text-white font-black text-lg rounded-2xl shadow-xl shadow-accent/20 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none transition-all"
                                 >
-                                  {((project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems) || []).length > 0 && !((project.checklistItems?.length > 0 ? project.checklistItems : opChecklistItems) || []).every((i:any) => i.done) ? "COMPLETA EL CHECKLIST PARA INICIAR" : "CONFIRMAR E INICIAR JORNADA"}
+                                  {
+                                    (((project.projectMaterials?.length > 0 ? project.projectMaterials : opProjectMaterials) || []).length > 0 && !((project.projectMaterials?.length > 0 ? project.projectMaterials : opProjectMaterials) || []).every((i: any) => i.done && i.takenQuantity >= i.quantity))
+                                      ? "COMPLETA LA LISTA DE MATERIALES"
+                                      : "CONFIRMAR E INICIAR JORNADA"
+                                  }
                                 </Button>
                               </div>
                             ) : (
@@ -857,9 +942,9 @@ export default function ProjectsPage() {
                                     {reportPhotos.map((photo, i) => (
                                       <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/10 group shadow-lg">
                                         <Image src={photo.dataUrl} alt="Foto" fill className="object-cover" />
-                                        <Button 
-                                          variant="destructive" 
-                                          size="icon" 
+                                        <Button
+                                          variant="destructive"
+                                          size="icon"
                                           className="absolute inset-0 m-auto h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                                           onClick={() => setReportPhotos(prev => prev.filter((_, idx) => idx !== i))}
                                           title="Eliminar Foto"
@@ -868,7 +953,7 @@ export default function ProjectsPage() {
                                         </Button>
                                       </div>
                                     ))}
-                                    <button 
+                                    <button
                                       onClick={() => photoInputRef.current?.click()}
                                       className="w-24 h-24 rounded-xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center text-muted-foreground hover:border-accent hover:text-accent transition-all bg-white/5"
                                     >
@@ -881,16 +966,16 @@ export default function ProjectsPage() {
 
                                 <div className="space-y-4">
                                   <Label className="text-xs font-black uppercase tracking-widest text-accent">Observaciones y Resumen de Avance</Label>
-                                  <Textarea 
-                                    value={reportContent} 
-                                    onChange={(e) => setReportContent(e.target.value)} 
-                                    placeholder="Describe cualquier imprevisto o detalle relevante..." 
-                                    className="min-h-[120px] bg-white/5 border-white/10 rounded-2xl focus:ring-accent" 
+                                  <Textarea
+                                    value={reportContent}
+                                    onChange={(e) => setReportContent(e.target.value)}
+                                    placeholder="Describe cualquier imprevisto o detalle relevante..."
+                                    className="min-h-[120px] bg-white/5 border-white/10 rounded-2xl focus:ring-accent"
                                   />
                                 </div>
 
-                                <Button 
-                                  onClick={() => handleFinishDayAndReport(project)} 
+                                <Button
+                                  onClick={() => handleFinishDayAndReport(project)}
                                   className="w-full h-16 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-lg rounded-2xl shadow-xl shadow-emerald-500/20"
                                   disabled={loading}
                                 >
