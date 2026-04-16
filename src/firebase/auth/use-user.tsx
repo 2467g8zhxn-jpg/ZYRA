@@ -26,7 +26,7 @@ export function useUser() {
       if (currentUser) {
         // Optimismo: Si es el correo de admin, pre-configuramos el rol para evitar parpadeos
         if (currentUser.email === 'admin@zyra.com' || currentUser.email?.includes('admin')) {
-          setProfile(prev => prev || { 
+          setProfile((prev: any) => prev || { 
             nombre: 'Admin', 
             rol: 'admin', 
             email: currentUser.email 

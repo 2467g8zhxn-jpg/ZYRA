@@ -61,11 +61,20 @@ import {
   Save,
   X,
   CheckCircle2,
-  Loader2
+  Loader2,
+  PlusCircle,
+  Edit2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/components/providers/i18n-provider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function MaterialsPage() {
   const { profile } = useUser();
@@ -80,10 +89,17 @@ export default function MaterialsPage() {
   const [loading, setLoading] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
 
+  // States for Update Stock
+  const [isUpdateStockOpen, setIsUpdateStockOpen] = useState(false);
+  const [stockToUpdate, setStockToUpdate] = useState<{ id: string, name: string, current: number, added: number } | null>(null);
+
   // States for Template Editing
   const [editingTemplateType, setEditingTemplateType] = useState<string | null>(null);
-  const [tempItems, setTempItems] = useState<any[]>([]);
-  const [newItemText, setNewItemText] = useState("");
+  const [tempMaterials, setTempMaterials] = useState<{ id: string, name: string, quantity: number }[]>([]);
+  const [newMaterialSelected, setNewMaterialSelected] = useState("");
+  const [newMaterialQuantity, setNewMaterialQuantity] = useState(1);
+  const [editingMaterialIndex, setEditingMaterialIndex] = useState<number | null>(null);
+  const [editingMaterialQuantity, setEditingMaterialQuantity] = useState(1);
 
   const [newMaterial, setNewMaterial] = useState({
     Mat_Nombre: "",
@@ -145,30 +161,73 @@ export default function MaterialsPage() {
       });
   };
 
+  const handleUpdateStock = () => {
+    if (!db || !stockToUpdate) return;
+    setLoading(true);
+    const docRef = doc(db, "materiales", stockToUpdate.id);
+    
+    updateDoc(docRef, {
+      Mat_Stock_Disponible: stockToUpdate.current + stockToUpdate.added,
+      updatedAt: serverTimestamp()
+    })
+      .then(() => {
+        toast({ title: t.common.success, description: "Stock actualizado correctamente" });
+        setIsUpdateStockOpen(false);
+        setStockToUpdate(null);
+      })
+      .catch((e) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'update'
+        }));
+      })
+      .finally(() => setLoading(false));
+  };
+
   // Template Management Logic
   const openEditTemplate = (type: string) => {
     setEditingTemplateType(type);
     const existing = checklists?.find(c => c.id === type);
-    setTempItems(existing?.items || []);
-    setNewItemText("");
+    setTempMaterials(existing?.materials || []);
+    setNewMaterialSelected("");
+    setNewMaterialQuantity(1);
     setIsEditDialogOpen(true);
   };
 
-  const handleAddItem = () => {
-    if (!newItemText.trim()) return;
-    setTempItems([...tempItems, newItemText.trim()]);
-    setNewItemText("");
+  const handleAddTempMaterial = () => {
+    if (!newMaterialSelected || newMaterialQuantity <= 0) return;
+    const materialData = materials?.find(m => m.id === newMaterialSelected);
+    const materialName = materialData ? (typeof materialData.Mat_Nombre === 'object' ? materialData.Mat_Nombre?.name : materialData.Mat_Nombre) : "Material";
+    
+    setTempMaterials([...tempMaterials, { 
+      id: newMaterialSelected, 
+      name: materialName as string, 
+      quantity: newMaterialQuantity 
+    }]);
+    setNewMaterialSelected("");
+    setNewMaterialQuantity(1);
   };
 
-  const handleRemoveItem = (index: number) => {
-    setTempItems(tempItems.filter((_, i) => i !== index));
+  const handleRemoveTempMaterial = (index: number) => {
+    setTempMaterials(tempMaterials.filter((_, i) => i !== index));
+  };
+
+  const saveEditedMaterial = () => {
+    if (editingMaterialIndex === null) return;
+    const updated = [...tempMaterials];
+    updated[editingMaterialIndex].quantity = editingMaterialQuantity;
+    setTempMaterials(updated);
+    setEditingMaterialIndex(null);
   };
 
   const handleSaveTemplate = async () => {
     if (!db || !editingTemplateType) return;
     setSavingTemplate(true);
     const docRef = doc(db, "checklist_servicio", editingTemplateType);
-    const data = { items: tempItems, updatedAt: serverTimestamp() };
+    const data = { 
+      materials: tempMaterials,
+      updatedAt: serverTimestamp() 
+    };
 
     try {
       await setDoc(docRef, data, { merge: true });
@@ -309,7 +368,19 @@ export default function MaterialsPage() {
                               )}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDeleteMaterial(mat.id)}>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="text-muted-foreground hover:text-accent mr-1" 
+                                onClick={() => {
+                                  setStockToUpdate({ id: mat.id, name: materialName, current: mat.Mat_Stock_Disponible, added: 0 });
+                                  setIsUpdateStockOpen(true);
+                                }}
+                                title="Aumentar Stock"
+                              >
+                                <PlusCircle className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDeleteMaterial(mat.id)} title="Eliminar Material">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </TableCell>
@@ -340,7 +411,7 @@ export default function MaterialsPage() {
                     <Badge variant="outline" className="text-[10px] uppercase font-bold text-accent border-accent/30">Config CHS</Badge>
                   </div>
                   <CardTitle className="text-foreground mt-4 text-xl">{t.materials.template_install}</CardTitle>
-                  <CardDescription>Protocolo de tareas para proyectos de obra nueva.</CardDescription>
+                  <CardDescription>Plantilla de materiales necesarios para proyectos de obra nueva.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button 
@@ -349,7 +420,7 @@ export default function MaterialsPage() {
                     onClick={() => openEditTemplate("Instalación")}
                   >
                     <Settings2 className="h-4 w-4" />
-                    {t.materials.edit_chs}
+                    Editar Materiales
                   </Button>
                 </CardContent>
               </Card>
@@ -364,7 +435,7 @@ export default function MaterialsPage() {
                     <Badge variant="outline" className="text-[10px] uppercase font-bold text-primary border-primary/30">Config CHS</Badge>
                   </div>
                   <CardTitle className="text-foreground mt-4 text-xl">{t.materials.template_maint}</CardTitle>
-                  <CardDescription>Protocolo de limpieza y revisión de sistemas existentes.</CardDescription>
+                  <CardDescription>Plantilla de insumos requeridos para limpieza y revisión de sistemas existentes.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button 
@@ -373,7 +444,7 @@ export default function MaterialsPage() {
                     onClick={() => openEditTemplate("Mantenimiento")}
                   >
                     <Settings2 className="h-4 w-4" />
-                    {t.materials.edit_chs}
+                    Editar Materiales
                   </Button>
                 </CardContent>
               </Card>
@@ -387,64 +458,112 @@ export default function MaterialsPage() {
             <DialogHeader>
               <DialogTitle className="text-accent flex items-center gap-2">
                 <Settings2 className="h-5 w-5" /> 
-                {editingTemplateType === "Instalación" ? t.materials.template_install : t.materials.template_maint}
+                {editingTemplateType === "Instalación" ? "Plantilla de Materiales de Instalación" : "Plantilla de Materiales de Mantenimiento"}
               </DialogTitle>
               <DialogDescription>
-                Define la lista de tareas obligatorias para este tipo de servicio.
+                Define la lista y cantidad de los materiales necesarios que se llevarán a este tipo de proyecto.
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-4">
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Nueva tarea del checklist..." 
-                  className="h-10 bg-muted/50 border-border"
-                  value={newItemText}
-                  onChange={(e) => setNewItemText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddItem()}
-                />
-                <Button size="icon" className="bg-accent hover:bg-accent/90 shrink-0" onClick={handleAddItem}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Tareas Actuales</Label>
-                <ScrollArea className="h-[250px] border border-border rounded-xl p-3 bg-muted/10">
-                  {tempItems.length > 0 ? (
-                    <div className="space-y-2">
-                      {tempItems.map((item, idx) => {
-                        const labelText = typeof item === 'object' ? (item.name || "Tarea sin nombre") : (item || "Tarea sin nombre");
+              
+              {/* Materiales */}
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Select value={newMaterialSelected} onValueChange={setNewMaterialSelected}>
+                    <SelectTrigger className="flex-1 h-10 bg-muted/50 border-border text-xs">
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredMaterials.map(m => {
+                        const mName = typeof m.Mat_Nombre === 'object' ? (m.Mat_Nombre?.name || "") : (m.Mat_Nombre || "");
                         return (
-                          <div key={idx} className="flex items-center justify-between p-3 bg-card border border-border rounded-lg group">
-                            <div className="flex items-center gap-3">
-                              <CheckCircle2 className="h-4 w-4 text-accent/50" />
-                              <span className="text-xs text-foreground font-medium">{labelText}</span>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleRemoveItem(idx)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
+                          <SelectItem key={m.id} value={m.id}>{mName}</SelectItem>
                         );
                       })}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-10 opacity-30">
-                      <CheckCircle2 className="h-8 w-8 mb-2" />
-                      <p className="text-[10px] uppercase font-bold">Sin tareas configuradas</p>
-                    </div>
-                  )}
-                </ScrollArea>
+                    </SelectContent>
+                  </Select>
+                  <Input 
+                    type="number" 
+                    className="w-16 h-10 bg-muted/50 border-border text-xs" 
+                    value={newMaterialQuantity} 
+                    onChange={(e) => setNewMaterialQuantity(parseInt(e.target.value) || 0)} 
+                  />
+                  <Button size="icon" className="bg-accent hover:bg-accent/90 shrink-0" onClick={handleAddTempMaterial} disabled={!newMaterialSelected}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <ScrollArea className="h-[250px] border border-border rounded-xl p-3 bg-muted/10">
+                    {tempMaterials.length > 0 ? (
+                      <div className="space-y-2">
+                        {tempMaterials.map((mat, idx) => (
+                          <div key={idx} className="flex flex-col gap-2 p-2 bg-card border border-border rounded-lg group">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Package className="h-3 w-3 text-accent" />
+                                <span className="text-xs text-foreground font-medium truncate max-w-[140px]">{mat.name}</span>
+                              </div>
+                              <div className="flex gap-1 items-center">
+                                {editingMaterialIndex !== idx && (
+                                  <>
+                                    <Badge variant="outline" className="text-[10px] shrink-0">Cant: {mat.quantity}</Badge>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-6 w-6 text-muted-foreground hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => {
+                                        setEditingMaterialIndex(idx);
+                                        setEditingMaterialQuantity(mat.quantity);
+                                      }}
+                                    >
+                                      <Edit2 className="h-3 w-3" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => handleRemoveTempMaterial(idx)}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            {editingMaterialIndex === idx && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <Input 
+                                  type="number" 
+                                  className="h-7 text-xs flex-1" 
+                                  value={editingMaterialQuantity} 
+                                  onChange={(e) => setEditingMaterialQuantity(parseInt(e.target.value) || 0)} 
+                                />
+                                <Button size="sm" className="h-7 bg-accent text-white px-2" onClick={saveEditedMaterial}>
+                                  <Save className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setEditingMaterialIndex(null)}>
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-10 opacity-30">
+                        <Package className="h-8 w-8 mb-2" />
+                        <p className="text-[10px] uppercase font-bold">Sin materiales</p>
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
               </div>
             </div>
-            <DialogFooter className="gap-2 sm:gap-0">
-              <Button variant="outline" className="w-full border-border" onClick={() => setIsEditDialogOpen(false)}>{t.common.cancel}</Button>
+            <DialogFooter className="gap-2 sm:gap-0 mt-4 border-t border-border pt-4">
+              <Button variant="outline" className="w-[120px] border-border" onClick={() => setIsEditDialogOpen(false)}>{t.common.cancel}</Button>
               <Button 
-                className="w-full bg-accent hover:bg-accent/90 text-white font-bold h-10 gap-2"
+                className="w-[120px] bg-accent hover:bg-accent/90 text-white font-bold h-10 gap-2"
                 onClick={handleSaveTemplate}
                 disabled={savingTemplate}
               >
@@ -454,6 +573,53 @@ export default function MaterialsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Update Stock Dialog */}
+        <Dialog open={isUpdateStockOpen} onOpenChange={setIsUpdateStockOpen}>
+          <DialogContent className="w-[95vw] max-w-sm bg-card border-border">
+            <DialogHeader>
+              <DialogTitle className="text-accent flex items-center gap-2">
+                <PlusCircle className="h-5 w-5" /> Aumentar Stock
+              </DialogTitle>
+              <DialogDescription>
+                Añade unidades al inventario de <span className="font-bold text-foreground">{stockToUpdate?.name}</span>.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="flex justify-between items-center p-3 bg-muted/20 rounded-xl border border-border">
+                <span className="text-sm text-muted-foreground">Stock actual:</span>
+                <span className="text-xl font-bold font-mono">{stockToUpdate?.current}</span>
+              </div>
+              <div className="space-y-2">
+                <Label>Cantidad a añadir</Label>
+                <Input 
+                  type="number" 
+                  className="text-lg font-mono bg-muted/50" 
+                  value={stockToUpdate?.added || ""} 
+                  onChange={(e) => setStockToUpdate(prev => prev ? {...prev, added: parseInt(e.target.value) || 0} : null)}
+                  autoFocus
+                />
+              </div>
+              {stockToUpdate && stockToUpdate.added > 0 && (
+                <div className="flex justify-between items-center p-3 bg-accent/10 rounded-xl border border-accent/20">
+                  <span className="text-sm font-bold text-accent">Nuevo stock total:</span>
+                  <span className="text-xl font-bold font-mono text-accent">{stockToUpdate.current + stockToUpdate.added}</span>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsUpdateStockOpen(false)}>{t.common.cancel}</Button>
+              <Button 
+                className="bg-accent hover:bg-accent/90 text-white font-bold" 
+                onClick={handleUpdateStock}
+                disabled={!stockToUpdate?.added || stockToUpdate.added <= 0 || loading}
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 mr-2" />} Confirmar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </DashboardLayout>
   );
