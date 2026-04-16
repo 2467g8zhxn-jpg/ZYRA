@@ -148,7 +148,10 @@ function ReportsContent() {
       const targetReport = firestoreReports?.find(r => r.id === reportId);
       if (newStatus === "Rechazado" && targetReport?.projectId) {
         const projectRef = doc(db, "proyectos", targetReport.projectId);
-        await updateDoc(projectRef, { Pry_Estado: "Rechazado" });
+        await updateDoc(projectRef, { 
+          Pry_Estado: "Rechazado",
+          lastRejectedReportId: reportId 
+        });
       } else if (newStatus === "Aprobado" && targetReport?.projectId) {
         const projectRef = doc(db, "proyectos", targetReport.projectId);
         await updateDoc(projectRef, { Pry_Estado: "Finalizado" });
