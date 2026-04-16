@@ -601,21 +601,22 @@ export default function ProjectsPage() {
         checklistSnapshot: currentTasks
       };
 
-      // Revisar si existe un reporte rechazado para actualizarlo en lugar de crear uno nuevo saltándose el historial duplicado
+      // Actualizar el reporte rechazado directamente si tenemos su ID
       try {
-        const q = query(collection(db, "reports"), where("projectId", "==", project.id), where("status", "==", "Rechazado"));
-        const snapshot = await getDocs(q);
-
-        if (!snapshot.empty) {
-          const docId = snapshot.docs[0].id;
-          await updateDoc(doc(db, "reports", docId), {
+        if (project.lastRejectedReportId) {
+          await updateDoc(doc(db, "reports", project.lastRejectedReportId), {
             ...baseReportData,
             employeeId: currentUid,
             employeeName: currentProfile.nombre || "Técnico Zyra",
             status: "Pendiente" // Se vuelve a mandar a revisión
           });
+          
+          // Limpiar el ID del proyecto
+          await updateDoc(doc(db, "proyectos", project.id), {
+            lastRejectedReportId: null
+          }).catch(() => {});
         } else {
-          // Crear un SÓLO reporte para todo el equipo si no había uno rechazado previo
+          // Si no hay ID, crear un SÓLO reporte nuevo para todo el equipo
           await addDoc(collection(db, "reports"), {
             ...baseReportData,
             employeeId: currentUid,
@@ -623,7 +624,7 @@ export default function ProjectsPage() {
           });
         }
       } catch (e) {
-        console.warn(e);
+        console.warn("Report Sync Error:", e);
       }
 
       // Cambiamos estado de PORYECTO a 'EnRevision' para TODO el equipo
