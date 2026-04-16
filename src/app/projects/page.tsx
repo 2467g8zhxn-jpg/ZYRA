@@ -790,7 +790,26 @@ export default function ProjectsPage() {
                       if (o) { 
                         setSelectedProject(project); 
                         // Load items from the LATEST VIRTUAL progress instead of the blocked database record
-                        const currentTasks = latestReport?.checklistSnapshot || project.checklistItems || [];
+                        let currentTasks = latestReport?.checklistSnapshot || project.checklistItems || [];
+                        
+                        // If no previous tasks, fallback to the Admin predefined checklist template
+                        if (currentTasks.length === 0 && checklistTemplates) {
+                          const templateKey = project.serviceType === 'Mantenimiento' ? 'Mantenimiento' : 'Instalación';
+                          const template = checklistTemplates.find(c => c.id === templateKey);
+                          if (template?.items) {
+                            currentTasks = template.items.map((it: any) => ({ 
+                              name: typeof it === 'string' ? it : (it.name || 'Tarea'), 
+                              done: false 
+                            }));
+                          }
+                        }
+
+                        // If NOT in course (meaning we are about to start the day), force all items to be unchecked
+                        // so the employee MUST verify them today.
+                        if (!isEnCurso) {
+                          currentTasks = currentTasks.map((t: any) => ({ ...t, done: false }));
+                        }
+
                         setOpChecklistItems(currentTasks); 
                       } 
                     }}>
@@ -838,8 +857,12 @@ export default function ProjectsPage() {
                                 <div className="p-6 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-center">
                                   <p className="text-sm text-orange-500 font-bold">Verifica todos los puntos anteriores para iniciar jornada.</p>
                                 </div>
-                                <Button onClick={() => handleStartDay(project)} className="w-full h-16 bg-accent hover:bg-accent/90 text-white font-black text-lg rounded-2xl shadow-xl shadow-accent/20">
-                                  CONFIRMAR E INICIAR JORNADA
+                                <Button 
+                                  onClick={() => handleStartDay(project)} 
+                                  disabled={opChecklistItems.length > 0 && !opChecklistItems.every(i => i.done)}
+                                  className="w-full h-16 bg-accent hover:bg-accent/90 text-white font-black text-lg rounded-2xl shadow-xl shadow-accent/20 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none transition-all"
+                                >
+                                  {opChecklistItems.length > 0 && !opChecklistItems.every(i => i.done) ? "COMPLETA EL CHECKLIST PARA INICIAR" : "CONFIRMAR E INICIAR JORNADA"}
                                 </Button>
                               </div>
                             ) : (

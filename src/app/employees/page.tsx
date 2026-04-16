@@ -70,28 +70,7 @@ export default function EmployeesPage() {
     Emp_Nombre: "",
     Emp_CorreoPersonal: "",
     Emp_Telefono: "",
-    Emp_EmailAcceso: "", // NEW: Manual access email field
   });
-
-  // Flag to know if the user edited the access email manually
-  const [isEmailManuallyEdited, setIsEmailManuallyEdited] = useState(false);
-
-  // Auto-generate suggested email based on name
-  useEffect(() => {
-    if (!isEmailManuallyEdited && newEmployee.Emp_Nombre) {
-      const cleanInput = newEmployee.Emp_Nombre.trim().toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
-
-      const parts = cleanInput.split(/\s+/);
-      const firstInitial = parts[0].charAt(0);
-      const lastName = parts.length >= 2 ? parts[1] : parts[0];
-
-      if (firstInitial && lastName) {
-        setNewEmployee(prev => ({ ...prev, Emp_EmailAcceso: `${firstInitial}${lastName}@zyra.com` }));
-      }
-    }
-  }, [newEmployee.Emp_Nombre, isEmailManuallyEdited]);
 
   const employeesQuery = useMemoFirebase(() => {
     if (!db || !isAdmin) return null;
@@ -109,7 +88,10 @@ export default function EmployeesPage() {
   }, [employees, searchTerm]);
 
   const handleCreateEmployee = async () => {
-    if (!db || !newEmployee.Emp_Nombre || !newEmployee.Emp_CorreoPersonal || !newEmployee.Emp_EmailAcceso) return;
+    if (!db || !newEmployee.Emp_Nombre || !newEmployee.Emp_CorreoPersonal || !newEmployee.Emp_Telefono) {
+      toast({ variant: "destructive", title: "Error", description: "Todos los campos son obligatorios" });
+      return;
+    }
 
     // Basic format validations
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -117,22 +99,27 @@ export default function EmployeesPage() {
       toast({ variant: "destructive", title: "Error", description: "Formato de correo personal inválido" });
       return;
     }
-    if (!emailRegex.test(newEmployee.Emp_EmailAcceso)) {
-      toast({ variant: "destructive", title: "Error", description: "Formato de correo de acceso inválido" });
-      return;
-    }
+
+    // Auto-generate access email
+    const cleanInput = newEmployee.Emp_Nombre.trim().toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    const parts = cleanInput.split(/\s+/);
+    const firstInitial = parts[0].charAt(0);
+    const lastName = parts.length >= 2 ? parts[1] : parts[0];
+    const generatedEmail = `${firstInitial}${lastName}@zyra.com`.trim();
 
     setLoading(true);
 
     // 1. Check for duplicates in Firestore first (Avoid useless Auth calls)
     try {
-      const q = query(collection(db, "users"), where("emailAcceso", "==", newEmployee.Emp_EmailAcceso.trim()));
+      const q = query(collection(db, "users"), where("emailAcceso", "==", generatedEmail));
       const snap = await getDocs(q);
       if (!snap.empty) {
         toast({
           variant: "destructive",
           title: "Email en uso (Base de datos)",
-          description: `El correo "${newEmployee.Emp_EmailAcceso}" ya está en tu lista de empleados. Prueba con una variación o añade un número.`
+          description: `El nombre de usuario para "${generatedEmail}" ya está en uso. Por favor, añada un segundo apellido o modifique el nombre.`
         });
         setLoading(false);
         return;
@@ -142,7 +129,7 @@ export default function EmployeesPage() {
     }
 
     const generatedPassword = Math.random().toString(36).slice(-8) + "!";
-    const finalAccessEmail = newEmployee.Emp_EmailAcceso.trim();
+    const finalAccessEmail = generatedEmail;
 
     let secondaryApp;
     try {
@@ -168,6 +155,7 @@ export default function EmployeesPage() {
         emailAcceso: finalAccessEmail,
         email: finalAccessEmail,
         telefono: newEmployee.Emp_Telefono.trim(),
+        passwordTemporal: generatedPassword,
         rol: "employee",
         nivel: 1,
         puntos: 0,
@@ -189,9 +177,7 @@ export default function EmployeesPage() {
         Emp_Nombre: "",
         Emp_CorreoPersonal: "",
         Emp_Telefono: "",
-        Emp_EmailAcceso: "",
       });
-      setIsEmailManuallyEdited(false);
     } catch (e: any) {
       console.error("Error en registro:", e);
       let errorMsg = e.message;
@@ -272,36 +258,44 @@ export default function EmployeesPage() {
     setIsViewDialogOpen(true);
   };
 
-  const copyToClipboard = (text: string) => {
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text)
-        .then(() => toast({ description: "Copiado al portapapeles" }))
-        .catch(() => fallbackCopyTextToClipboard(text));
-    } else {
-      fallbackCopyTextToClipboard(text);
+  const copyToClipboard = async (text: string) => {
+    if (!text) {
+      toast({ variant: "destructive", description: "No hay texto para copiar." });
+      return;
     }
-  };
-
-  const fallbackCopyTextToClipboard = (text: string) => {
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    textArea.style.top = "0";
-    textArea.style.left = "0";
-    textArea.style.position = "fixed";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
+    
     try {
+      if (navigator.clipboard) {
+         await navigator.clipboard.writeText(text);
+         toast({ description: "Copiado correctamente" });
+         return;
+      }
+    } catch (e) {
+      console.warn("Modern clipboard failed, using fallback", e);
+    }
+
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      // Make it invisible to avoid focus scrolling and Radix trap issues
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      
+      textArea.select();
+      
       const successful = document.execCommand('copy');
+      textArea.remove();
+      
       if (successful) {
-        toast({ description: "Copiado al portapapeles" });
+        toast({ description: "Copiado correctamente" });
       } else {
-        toast({ variant: "destructive", description: "No se pudo copiar." });
+        toast({ variant: "destructive", description: "Copia bloqueada por el navegador." });
       }
     } catch (err) {
-      toast({ variant: "destructive", description: "No se pudo copiar." });
+       toast({ variant: "destructive", description: "Error al intentar copiar." });
     }
-    document.body.removeChild(textArea);
   };
 
   const copyCombinedCredentials = () => {
@@ -352,9 +346,7 @@ export default function EmployeesPage() {
                 Emp_Nombre: "",
                 Emp_CorreoPersonal: "",
                 Emp_Telefono: "",
-                Emp_EmailAcceso: "",
               });
-              setIsEmailManuallyEdited(false);
             }
           }}>
             <DialogTrigger asChild>
@@ -379,27 +371,6 @@ export default function EmployeesPage() {
                         value={newEmployee.Emp_Nombre || ""}
                         onChange={(e) => setNewEmployee({ ...newEmployee, Emp_Nombre: e.target.value })}
                       />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-[10px] uppercase font-bold text-accent tracking-widest flex items-center gap-2">
-                        <Mail className="h-3 w-3" /> Correo de Acceso (Corporativo)
-                      </Label>
-                      <div className="relative group">
-                        <Input
-                          placeholder="usuario@zyra.com"
-                          className="h-11 bg-accent/5 border-accent/20 text-foreground font-medium pr-10"
-                          value={newEmployee.Emp_EmailAcceso || ""}
-                          onChange={(e) => {
-                            setNewEmployee({ ...newEmployee, Emp_EmailAcceso: e.target.value });
-                            setIsEmailManuallyEdited(true);
-                          }}
-                        />
-                        {isEmailManuallyEdited && (
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase font-black text-accent bg-accent/10 px-1 rounded">Editado</div>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-muted-foreground italic">Este será su nombre de usuario para iniciar sesión en ZYRA.</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -427,7 +398,7 @@ export default function EmployeesPage() {
                   <DialogFooter>
                     <Button
                       className="bg-accent hover:bg-accent/90 text-white w-full h-12 text-lg font-bold rounded-xl transition-all shadow-lg"
-                      disabled={!newEmployee.Emp_Nombre || !newEmployee.Emp_EmailAcceso || loading}
+                      disabled={!newEmployee.Emp_Nombre || !newEmployee.Emp_CorreoPersonal || !newEmployee.Emp_Telefono || loading}
                       onClick={handleCreateEmployee}
                     >
                       {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : "Crear Registro"}
@@ -571,70 +542,96 @@ export default function EmployeesPage() {
 
         {/* View Profile Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto bg-card border-border sm:max-w-md ring-1 ring-border">
+          <DialogContent className="w-[95vw] max-h-[90vh] overflow-y-auto bg-card border-border sm:max-w-4xl ring-1 ring-border">
             <DialogHeader>
               <DialogTitle className="text-accent flex items-center gap-2 uppercase font-black tracking-widest text-sm">
                 <UserCircle className="h-5 w-5" /> Expediente del Técnico
               </DialogTitle>
             </DialogHeader>
             {selectedEmployee && (
-              <div className="space-y-6 py-4">
-                <div className="flex flex-col items-center gap-4 bg-muted/10 p-6 rounded-3xl border border-border/50">
-                  <div className="h-24 w-24 rounded-2xl bg-accent/20 border-2 border-accent/30 flex items-center justify-center shadow-xl shadow-accent/10">
-                    <span className="text-4xl font-black text-accent italic">
-                      {(selectedEmployee.nombre || selectedEmployee.Emp_Nombre || "?").substring(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="text-center">
-                    <h3 className="text-2xl font-black text-foreground tracking-tight">{selectedEmployee.nombre || selectedEmployee.Emp_Nombre}</h3>
-                    <div className="inline-block px-3 py-1 bg-accent rounded-full mt-2">
-                      <p className="text-[9px] text-white font-black uppercase tracking-[0.3em]">Operaciones ZYRA</p>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 py-4">
+                
+                {/* Lado izquierdo: Avatar y Rol */}
+                <div className="md:col-span-4 flex flex-col gap-4">
+                  <div className="flex flex-col items-center gap-4 bg-muted/10 p-6 rounded-3xl border border-border/50 h-full justify-center">
+                    <div className="h-24 w-24 rounded-2xl bg-accent/20 border-2 border-accent/30 flex items-center justify-center shadow-xl shadow-accent/10">
+                      <span className="text-4xl font-black text-accent italic">
+                        {(selectedEmployee.nombre || selectedEmployee.Emp_Nombre || "?").substring(0, 2).toUpperCase()}
+                      </span>
                     </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-card p-4 rounded-2xl border border-border text-center shadow-sm">
-                    <Label className="text-[10px] uppercase font-black text-muted-foreground block mb-2">Poder / Nivel</Label>
-                    <div className="flex items-center justify-center gap-2 text-xl font-black text-accent italic">
-                      <Zap className="h-5 w-5 animate-pulse" /> {selectedEmployee.nivel || 1}
-                    </div>
-                  </div>
-                  <div className="bg-card p-4 rounded-2xl border border-border text-center shadow-sm">
-                    <Label className="text-[10px] uppercase font-black text-muted-foreground block mb-2">Prestigio / Puntos</Label>
-                    <div className="flex items-center justify-center gap-2 text-xl font-black text-yellow-500 italic">
-                      <Star className="h-5 w-5 fill-yellow-500" /> {selectedEmployee.puntos || 0}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <Label className="text-[10px] uppercase font-black text-muted-foreground ml-2 tracking-widest">Email de Acceso (ID)</Label>
-                    <div className="flex items-center justify-between gap-3 text-sm text-foreground bg-muted/20 p-4 rounded-2xl border border-border/50 group">
-                      <div className="flex items-center gap-3 truncate font-bold text-accent">
-                        <Mail className="h-4 w-4" />
-                        <span className="truncate">{selectedEmployee.emailAcceso || selectedEmployee.email || "N/A"}</span>
+                    <div className="text-center">
+                      <h3 className="text-2xl font-black text-foreground tracking-tight">{selectedEmployee.nombre || selectedEmployee.Emp_Nombre}</h3>
+                      <div className="inline-block px-3 py-1 bg-accent rounded-full mt-2">
+                        <p className="text-[9px] text-white font-black uppercase tracking-[0.3em]">Operaciones ZYRA</p>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => copyToClipboard(selectedEmployee.emailAcceso)}>
-                        <Copy className="h-3 w-3" />
-                      </Button>
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-[10px] uppercase font-black text-muted-foreground ml-2 tracking-widest">Email Personal</Label>
-                    <div className="flex items-center gap-3 text-sm text-foreground bg-muted/20 p-4 rounded-2xl border border-border/50">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium truncate">{selectedEmployee.emailPersonal || "N/A"}</span>
+                </div>
+
+                {/* Lado derecho: Información detallada */}
+                <div className="md:col-span-8 flex flex-col gap-4">
+                  
+                  {/* Stats Cards */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-card p-4 rounded-2xl border border-border text-center shadow-sm">
+                      <Label className="text-[10px] uppercase font-black text-muted-foreground block mb-2">Poder / Nivel</Label>
+                      <div className="flex items-center justify-center gap-2 text-xl font-black text-accent italic">
+                        <Zap className="h-5 w-5 animate-pulse" /> {selectedEmployee.nivel || 1}
+                      </div>
+                    </div>
+                    <div className="bg-card p-4 rounded-2xl border border-border text-center shadow-sm">
+                      <Label className="text-[10px] uppercase font-black text-muted-foreground block mb-2">Prestigio / Puntos</Label>
+                      <div className="flex items-center justify-center gap-2 text-xl font-black text-yellow-500 italic">
+                        <Star className="h-5 w-5 fill-yellow-500" /> {selectedEmployee.puntos || 0}
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-[10px] uppercase font-black text-muted-foreground ml-2 tracking-widest">Contacto Directo</Label>
-                    <div className="flex items-center gap-3 text-sm text-foreground bg-muted/20 p-4 rounded-2xl border border-border/50">
-                      <Phone className="h-4 w-4 text-emerald-500" />
-                      <span className="font-mono font-bold">{selectedEmployee.telefono || "N/A"}</span>
+
+                  {/* Info Cards en Grid 2x2 */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-black text-muted-foreground ml-2 tracking-widest">Email de Acceso (ID)</Label>
+                      <div className="flex items-center justify-between gap-3 text-sm text-foreground bg-muted/20 px-4 rounded-2xl border border-border/50 group h-14">
+                        <div className="flex items-center gap-3 truncate font-bold text-accent">
+                          <Mail className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{selectedEmployee.emailAcceso || selectedEmployee.email || "N/A"}</span>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => copyToClipboard(selectedEmployee.emailAcceso)}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-black text-muted-foreground ml-2 tracking-widest">Contraseña Asignada</Label>
+                      <div className="flex items-center justify-between gap-3 text-sm text-foreground bg-muted/20 px-4 rounded-2xl border border-border/50 group h-14">
+                        <div className="flex items-center gap-3 truncate font-bold text-accent">
+                          <Lock className="h-4 w-4 shrink-0" />
+                          <span className="truncate font-mono">{selectedEmployee.passwordTemporal || "********"}</span>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => copyToClipboard(selectedEmployee.passwordTemporal || "")}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-black text-muted-foreground ml-2 tracking-widest">Email Personal</Label>
+                      <div className="flex items-center gap-3 text-sm text-foreground bg-muted/20 px-4 rounded-2xl border border-border/50 h-14">
+                        <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="font-medium truncate">{selectedEmployee.emailPersonal || "N/A"}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase font-black text-muted-foreground ml-2 tracking-widest">Contacto Directo</Label>
+                      <div className="flex items-center gap-3 text-sm text-foreground bg-muted/20 px-4 rounded-2xl border border-border/50 h-14">
+                        <Phone className="h-4 w-4 shrink-0 text-emerald-500" />
+                        <span className="font-mono font-bold">{selectedEmployee.telefono || "N/A"}</span>
+                      </div>
                     </div>
                   </div>
+
                 </div>
               </div>
             )}
