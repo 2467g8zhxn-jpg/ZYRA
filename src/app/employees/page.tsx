@@ -6,7 +6,7 @@ import { useFirestore, useCollection, useUser, useMemoFirebase, useAuth } from "
 import { firebaseConfig } from "@/firebase/config";
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
-import { collection, setDoc, doc, serverTimestamp, deleteDoc, query, where, getDocs } from "firebase/firestore";
+import { collection, setDoc, doc, serverTimestamp, deleteDoc, query, where, getDocs, writeBatch } from "firebase/firestore";
 import {
   Card,
   CardHeader,
@@ -131,8 +131,8 @@ export default function EmployeesPage() {
       if (!snap.empty) {
         toast({
           variant: "destructive",
-          title: "Email en uso",
-          description: `El correo ${newEmployee.Emp_EmailAcceso} ya está asignado a otro técnico. Prueba con una variación o añade un número.`
+          title: "Email en uso (Base de datos)",
+          description: `El correo "${newEmployee.Emp_EmailAcceso}" ya está en tu lista de empleados. Prueba con una variación o añade un número.`
         });
         setLoading(false);
         return;
@@ -196,9 +196,9 @@ export default function EmployeesPage() {
       console.error("Error en registro:", e);
       let errorMsg = e.message;
       if (e.code === 'auth/email-already-in-use') {
-        errorMsg = "Este email ya existe en el sistema de seguridad. Si el técnico no está en la lista de arriba, significa que es una 'cuenta fantasma' borrar de la consola de Firebase.";
+        errorMsg = `El correo "${finalAccessEmail}" ya existe en el sistema oculto de credenciales de Firebase. Esto ocurre a menudo si es igual a tu propio correo de admin o al de una cuenta fantasma pasada. Edita el correo de acceso en el campo de arriba para poder continuar.`;
       }
-      toast({ variant: "destructive", title: t.common.error, description: errorMsg });
+      toast({ variant: "destructive", title: "Error de Seguridad", description: errorMsg });
     } finally {
       if (secondaryApp) {
         try {
@@ -213,8 +213,35 @@ export default function EmployeesPage() {
     if (!db || !isAdmin) return;
     setLoading(true);
     try {
-      await deleteDoc(doc(db, "users", employeeId));
-      toast({ title: t.common.success, description: "Empleado eliminado de la lista. (Nota: El acceso sigue activo en Firebase Auth)" });
+      const batch = writeBatch(db);
+
+      // 1. Eliminar el documento del usuario (borra nombre, correo, teléfono, etc.)
+      const userRef = doc(db, "users", employeeId);
+      batch.delete(userRef);
+
+      // 2. Eliminar referencias en equipos (members array, leader)
+      const qTeams = query(collection(db, "teams"), where("members", "array-contains", employeeId));
+      const snapTeams = await getDocs(qTeams);
+      snapTeams.forEach((tDoc) => {
+        const teamData = tDoc.data();
+        const newMembers = (teamData.members || []).filter((id: string) => id !== employeeId);
+        const updates: any = { members: newMembers };
+        if (teamData.leaderId === employeeId) {
+          updates.leaderId = "";
+          updates.leaderName = "";
+        }
+        batch.update(tDoc.ref, updates);
+      });
+
+      // 3. Anonimizar reportes emitidos por este usuario para borrar su nombre
+      const qReports = query(collection(db, "reports"), where("employeeId", "==", employeeId));
+      const snapReports = await getDocs(qReports);
+      snapReports.forEach((rDoc) => {
+        batch.update(rDoc.ref, { authorName: "Técnico Eliminado" });
+      });
+
+      await batch.commit();
+      toast({ title: t.common.success, description: "Empleado y sus datos personales purgados del sistema. (Nota: Acceso en Auth debe eliminarse manualmente de Firebase)" });
     } catch (e: any) {
       toast({ variant: "destructive", title: t.common.error, description: e.message });
     } finally {
@@ -246,8 +273,40 @@ export default function EmployeesPage() {
   };
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ description: "Copiado al portapapeles" });
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text)
+        .then(() => toast({ description: "Copiado al portapapeles" }))
+        .catch(() => fallbackCopyTextToClipboard(text));
+    } else {
+      fallbackCopyTextToClipboard(text);
+    }
+  };
+
+  const fallbackCopyTextToClipboard = (text: string) => {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        toast({ description: "Copiado al portapapeles" });
+      } else {
+        toast({ variant: "destructive", description: "No se pudo copiar." });
+      }
+    } catch (err) {
+      toast({ variant: "destructive", description: "No se pudo copiar." });
+    }
+    document.body.removeChild(textArea);
+  };
+
+  const copyCombinedCredentials = () => {
+    const text = `Tu correo de acceso a Zyra es:\n${generatedCreds.zyraEmail}\nTu contraseña de acceso será:\n${generatedCreds.password}`;
+    copyToClipboard(text);
   };
 
   if (userLoading) {
@@ -287,7 +346,16 @@ export default function EmployeesPage() {
 
           <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
             setIsCreateDialogOpen(open);
-            if (!open) setShowCredentials(false);
+            if (!open) {
+              setShowCredentials(false);
+              setNewEmployee({
+                Emp_Nombre: "",
+                Emp_CorreoPersonal: "",
+                Emp_Telefono: "",
+                Emp_EmailAcceso: "",
+              });
+              setIsEmailManuallyEdited(false);
+            }
           }}>
             <DialogTrigger asChild>
               <Button className="bg-accent hover:bg-accent/90 text-white font-bold gap-2">
@@ -376,18 +444,15 @@ export default function EmployeesPage() {
                   <div className="py-6 space-y-4">
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">EMAIL DE ACCESO ZYRA</Label>
-                      <div className="flex gap-2">
-                        <Input readOnly value={generatedCreds.zyraEmail || ""} className="bg-muted/50 border-border font-mono text-sm text-foreground" />
-                        <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.zyraEmail)}><Copy className="h-4 w-4" /></Button>
-                      </div>
+                      <Input readOnly value={generatedCreds.zyraEmail || ""} className="bg-muted/50 border-border font-mono text-sm text-foreground" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">PASSWORD TEMPORAL</Label>
-                      <div className="flex gap-2">
-                        <Input readOnly value={generatedCreds.password || ""} className="bg-muted/50 border-border font-mono text-sm text-accent" />
-                        <Button variant="outline" size="icon" className="border-border hover:bg-muted" onClick={() => copyToClipboard(generatedCreds.password)}><Copy className="h-4 w-4" /></Button>
-                      </div>
+                      <Input readOnly value={generatedCreds.password || ""} className="bg-muted/50 border-border font-mono text-sm text-accent" />
                     </div>
+                    <Button variant="outline" className="w-full border-accent/20 hover:bg-accent/10 text-accent font-bold text-xs flex items-center justify-center gap-2 h-10 transition-colors" onClick={copyCombinedCredentials}>
+                      <Copy className="h-4 w-4" /> Copiar Ambas Credenciales
+                    </Button>
                     <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-md flex items-start gap-3">
                       <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />
                       <p className="text-[10px] text-yellow-500 uppercase font-bold tracking-tighter">
