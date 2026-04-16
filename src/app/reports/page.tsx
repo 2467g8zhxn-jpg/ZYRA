@@ -145,7 +145,7 @@ function ReportsContent() {
     e.stopPropagation(); // Evitar que se abra el detalle
     if (!db || !isAdmin) return;
     if (!confirm("¿Estás seguro de que deseas eliminar este reporte?")) return;
-    
+
     setProcessingId(reportId);
     try {
       await deleteDoc(doc(db, "reports", reportId));
